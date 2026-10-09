@@ -910,21 +910,26 @@
                     </div>
                 </div>
 
-                <div>
-                    <button type="button" onclick="showRuleModalFromSettings()" class="w-full bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-xs hover:bg-indigo-100 transition-all">
-                        📜 登録中のルール一覧を確認
-                    </button>
-                </div>
-
+                <!-- 管理者設定 -->
                 <div class="border-t dark:border-slate-800 pt-3 mt-2">
-                    <div class="flex items-center gap-1.5 mb-2 text-slate-700 dark:text-slate-200 font-extrabold text-xs">
-                        <i class="fa-solid fa-user-shield text-orange-600"></i>
-                        <span>🛡️ 管理者設定 / Admin Settings</span>
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-1.5 text-slate-700 dark:text-slate-200 font-extrabold text-xs">
+                            <i class="fa-solid fa-user-shield text-orange-600"></i>
+                            <span>🛡️ 管理者設定 / Admin Settings</span>
+                        </div>
+                        <button type="button" onclick="openTrashModal()" class="text-[11px] bg-rose-50 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 hover:bg-rose-100 font-bold px-2.5 py-1 rounded-xl border border-rose-200 dark:border-rose-900 flex items-center gap-1 transition-all">
+                            <i class="fa-solid fa-trash-can"></i> ゴミ箱 (<span id="trash-badge-count">0</span>)
+                        </button>
                     </div>
                     <div class="bg-slate-50 dark:bg-slate-800/80 p-3 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
                         <div>
-                            <label class="block text-slate-500 dark:text-slate-400 mb-1 text-[11px]">Google Apps Script (GAS) URL</label>
-                            <input type="text" id="settings-gas-url" placeholder="https://script.google.com/macros/s/.../exec" class="w-full border dark:border-slate-700 rounded-xl p-2 bg-white dark:bg-slate-900 text-[11px] font-mono">
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="block text-slate-500 dark:text-slate-400 text-[11px]">Google Apps Script (GAS) URL</label>
+                                <button type="button" id="gas-url-unlock-btn" onclick="unlockGasUrlEditor()" class="text-[10px] text-orange-600 dark:text-orange-400 font-bold hover:underline flex items-center gap-1">
+                                    <i class="fa-solid fa-lock" id="gas-url-lock-icon"></i> <span id="gas-url-lock-text">ロック中 (認証で解除)</span>
+                                </button>
+                            </div>
+                            <input type="password" id="settings-gas-url" disabled placeholder="🔒 管理者認証後に表示・編集可能" class="w-full border dark:border-slate-700 rounded-xl p-2 bg-slate-100 dark:bg-slate-900 text-[11px] font-mono text-slate-400 cursor-not-allowed">
                         </div>
                     </div>
                 </div>
@@ -933,6 +938,28 @@
             <div class="flex justify-between items-center pt-2 border-t dark:border-slate-800">
                 <button onclick="restoreDemoData()" class="text-orange-600 hover:underline text-xs font-bold">🔄 デモデータ完全復元</button>
                 <button onclick="saveSettingsForm()" class="px-4 py-2 rounded-xl bg-orange-600 text-white font-bold text-xs shadow">保存する</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- モーダル: ゴミ箱 -->
+    <div id="modal-trash-view" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 w-full max-w-lg rounded-2xl p-5 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto border border-slate-200 dark:border-slate-800">
+            <div class="flex items-center justify-between border-b pb-2 dark:border-slate-800">
+                <div>
+                    <h3 class="font-extrabold text-base flex items-center gap-2">
+                        <span>🗑️ ゴミ箱 (削除済みデータの復元・管理)</span>
+                    </h3>
+                    <p class="text-[10px] text-slate-400 font-medium mt-0.5">※ 62日間保存され、63日目に自動完全消去されます。</p>
+                </div>
+                <button onclick="closeTrashModal()" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
+            </div>
+
+            <div id="trash-items-container" class="space-y-2 max-h-64 overflow-y-auto pr-1"></div>
+
+            <div class="flex justify-between items-center pt-2 border-t dark:border-slate-800 text-xs">
+                <button onclick="emptyAllTrashWithConfirm()" class="text-rose-600 dark:text-rose-400 hover:underline font-bold text-xs">🗑️ ゴミ箱を空にする</button>
+                <button onclick="closeTrashModal()" class="px-4 py-2 rounded-xl bg-slate-800 dark:bg-slate-700 text-white font-bold text-xs">閉じる</button>
             </div>
         </div>
     </div>
@@ -993,15 +1020,7 @@
             { id: '0035', name: 'ゆうみ', gender: '男', number: '35', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' }
         ];
 
-        // 初期サンプル対戦カード
-        const SAMPLE_MATCHES = [
-            { id: 'm-101', time: '09:00', court: 'Aコート', teamA: 'サザエ', scoreA: 18, scoreA_1h: 8, scoreA_1on1: 2, scoreA_2h: 8, teamB: 'マスオ', scoreB: 14, scoreB_1h: 6, scoreB_1on1: 1, scoreB_2h: 7, refereeTeam: 'カツオ', isFinished: true },
-            { id: 'm-102', time: '09:00', court: 'Bコート', teamA: 'カツオ', scoreA: 12, scoreA_1h: 5, scoreA_1on1: 1, scoreA_2h: 6, teamB: 'ワカメ', scoreB: 15, scoreB_1h: 8, scoreB_1on1: 2, scoreB_2h: 5, refereeTeam: 'タラオ', isFinished: true },
-            { id: 'm-103', time: '09:25', court: 'Aコート', teamA: 'タラオ', scoreA: 16, scoreA_1h: 7, scoreA_1on1: 2, scoreA_2h: 7, teamB: 'サザエ', scoreB: 16, scoreB_1h: 6, scoreB_1on1: 2, scoreB_2h: 8, refereeTeam: 'マスオ', isFinished: false },
-            { id: 'm-104', time: '09:25', court: 'Bコート', teamA: 'マスオ', scoreA: 20, scoreA_1h: 10, scoreA_1on1: 2, scoreA_2h: 8, teamB: 'カツオ', scoreB: 18, scoreB_1h: 8, scoreB_1on1: 1, scoreB_2h: 9, refereeTeam: 'ワカメ', isFinished: false }
-        ];
-
-        // デフォルト初期大会構造
+        // 大会・試合データ初期値
         const INITIAL_TOURNAMENTS = [
             {
                 id: 'tour-1011-dnt-league',
@@ -1024,7 +1043,7 @@
                     { code: 'T-06', name: 'ゲスト①', image: null, members: ['ゲスト①', 'ゲスト②', 'ゲスト③', 'ゲスト④', 'ゲスト⑤'] },
                     { code: 'T-07', name: 'ゲスト②', image: null, members: ['ゲスト①', 'ゲスト②', 'ゲスト③', 'ゲスト④', 'ゲスト⑤'] }
                 ],
-                matches: SAMPLE_MATCHES
+                matches: []
             }
         ];
 
@@ -1053,7 +1072,8 @@
                 { id: 'rule-dnt-1', name: 'DNTルール①', table: DNT_RULE_1_TABLE }
             ],
             players: INITIAL_PLAYERS,
-            tournaments: INITIAL_TOURNAMENTS
+            tournaments: INITIAL_TOURNAMENTS,
+            trash: []
         };
 
         const i18n = {
@@ -1090,6 +1110,7 @@
 
         window.onload = function() {
             loadStateFromStorage();
+            purgeOldTrashItems();
             applyThemeUI();
             applyLanguageUI();
             startClock();
@@ -1173,6 +1194,7 @@
                     if (parsed.tournaments && parsed.tournaments.length > 0) state.tournaments = parsed.tournaments;
                     if (parsed.gasUrl) state.gasUrl = parsed.gasUrl;
                     if (parsed.newsContent) state.newsContent = parsed.newsContent;
+                    if (parsed.trash) state.trash = parsed.trash;
                 } catch(e){}
             }
         }
@@ -1741,40 +1763,227 @@
             if (!t) return;
 
             requestPasscodeProtection(() => {
-                openConfirmModal(
-                    '試合・大会の削除確認',
-                    `「${t.name}」を完全に削除してもよろしいですか？（※登録済みの対戦カード・スコアデータも消去されます。この操作は取り消せません）`,
-                    () => {
-                        state.tournaments = state.tournaments.filter(item => item.id !== tourId);
-                        if (state.activeTournamentId === tourId) {
-                            state.activeTournamentId = state.tournaments.length > 0 ? state.tournaments[0].id : null;
+                setTimeout(() => {
+                    openConfirmModal(
+                        '試合・大会の削除確認',
+                        `「${t.name}」をゴミ箱に移動しますか？（※62日間は管理者設定のゴミ箱から復元可能です。選手成績からは即時除外されます）`,
+                        () => {
+                            if (!state.trash) state.trash = [];
+                            state.trash.push({
+                                trashId: 'trash-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+                                type: 'tournament',
+                                deletedAt: new Date().toISOString(),
+                                data: JSON.parse(JSON.stringify(t))
+                            });
+
+                            state.tournaments = state.tournaments.filter(item => item.id !== tourId);
+                            if (state.activeTournamentId === tourId) {
+                                state.activeTournamentId = state.tournaments.length > 0 ? state.tournaments[0].id : null;
+                            }
+                            saveStateToStorage();
+                            renderDashboard();
+                            renderPlayersView();
+                            renderRankingsView();
+                            updateTrashBadge();
+                            showToast(`「${t.name}」をゴミ箱に移動しました`);
                         }
-                        saveStateToStorage();
-                        renderDashboard();
-                        showToast(`「${t.name}」を削除しました`);
-                    }
-                );
+                    );
+                }, 100);
             });
         }
 
-        function toggleGlobalSecondaryMatchesCollapse() {
-            state.globalSecondaryCollapsed = !state.globalSecondaryCollapsed;
-            updateGlobalSecondaryMatchesButtonUI();
-            renderMatchesGrouped();
-            showToast(state.globalSecondaryCollapsed ? '全試合を非表示にしました (最小化)' : '全試合を表示しました (最大化)');
+        function deleteMatchRow(matchId) {
+            const t = state.tournaments.find(item => item.id === state.activeTournamentId);
+            if (!t || !t.matches) return;
+            const mIndex = t.matches.findIndex(item => item.id === matchId);
+            if (mIndex === -1) return;
+
+            const m = t.matches[mIndex];
+
+            setTimeout(() => {
+                openConfirmModal(
+                    '試合カードの削除確認',
+                    `試合「${m.teamA} VS ${m.teamB} (${m.time || ''})」をゴミ箱に移動しますか？（※62日間保存され、選手ランキングからは即時除外されます）`,
+                    () => {
+                        if (!state.trash) state.trash = [];
+                        state.trash.push({
+                            trashId: 'trash-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+                            type: 'match',
+                            deletedAt: new Date().toISOString(),
+                            tournamentId: t.id,
+                            tournamentName: t.name,
+                            data: JSON.parse(JSON.stringify(m))
+                        });
+
+                        t.matches.splice(mIndex, 1);
+                        saveStateToStorage();
+                        renderMatchesGrouped();
+                        recalculateDetailRanking();
+                        renderRankingsView();
+                        renderPlayersView();
+                        updateTrashBadge();
+                        showToast('試合カードをゴミ箱に移動しました');
+                    }
+                );
+            }, 100);
         }
 
-        function updateGlobalSecondaryMatchesButtonUI() {
-            const toggleBtn = document.getElementById('secondary-matches-toggle-btn');
-            if (toggleBtn) {
-                if (state.globalSecondaryCollapsed) {
-                    toggleBtn.innerHTML = `<i class="fa-solid fa-eye"></i> 全試合表示 (最大化)`;
-                    toggleBtn.className = "bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-1.5 rounded-xl font-bold shadow-sm flex items-center gap-1 transition-all";
+        function purgeOldTrashItems() {
+            if (!state.trash) state.trash = [];
+            const now = Date.now();
+            const RETENTION_MS = 62 * 24 * 60 * 60 * 1000;
+
+            const initialLength = state.trash.length;
+            state.trash = state.trash.filter(item => {
+                if (!item.deletedAt) return false;
+                const deletedTime = new Date(item.deletedAt).getTime();
+                if (isNaN(deletedTime)) return false;
+                return (now - deletedTime) <= RETENTION_MS;
+            });
+
+            if (state.trash.length !== initialLength) {
+                saveStateToStorage();
+            }
+            updateTrashBadge();
+        }
+
+        function updateTrashBadge() {
+            const badge = document.getElementById('trash-badge-count');
+            if (badge) {
+                badge.innerText = state.trash ? state.trash.length : 0;
+            }
+        }
+
+        function openTrashModal() {
+            purgeOldTrashItems();
+            renderTrashList();
+            document.getElementById('modal-trash-view').classList.remove('hidden');
+        }
+
+        function closeTrashModal() {
+            document.getElementById('modal-trash-view').classList.add('hidden');
+        }
+
+        function renderTrashList() {
+            purgeOldTrashItems();
+            const container = document.getElementById('trash-items-container');
+            if (!container) return;
+
+            updateTrashBadge();
+
+            if (!state.trash || state.trash.length === 0) {
+                container.innerHTML = `<p class="text-slate-400 text-center py-8 text-xs font-semibold">ゴミ箱は空です</p>`;
+                return;
+            }
+
+            const now = Date.now();
+            const TOTAL_MS = 62 * 24 * 60 * 60 * 1000;
+
+            container.innerHTML = state.trash.map(item => {
+                const deletedTime = new Date(item.deletedAt).getTime();
+                const elapsedMs = now - deletedTime;
+                const remainingMs = TOTAL_MS - elapsedMs;
+                const remainingDays = Math.max(0, Math.ceil(remainingMs / (1000 * 3600 * 24)));
+
+                const dateStr = new Date(item.deletedAt).toLocaleString('ja-JP', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+
+                let title = '';
+                let badge = '';
+
+                if (item.type === 'tournament') {
+                    title = item.data?.name || '大会・試合データ';
+                    badge = '<span class="bg-orange-100 dark:bg-orange-950 text-orange-700 dark:text-orange-300 text-[10px] font-bold px-2 py-0.5 rounded-md">🏆 大会/試合</span>';
                 } else {
-                    toggleBtn.innerHTML = `<i class="fa-solid fa-eye-slash"></i> 全試合を非表示 (最小化)`;
-                    toggleBtn.className = "bg-amber-500 hover:bg-amber-600 text-white text-xs px-3 py-1.5 rounded-xl font-bold shadow-sm flex items-center gap-1 transition-all";
+                    const m = item.data || {};
+                    title = `${m.teamA || 'チームA'} VS ${m.teamB || 'チームB'} (${m.time || '10:00'}) - [${item.tournamentName || ''}]`;
+                    badge = '<span class="bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold px-2 py-0.5 rounded-md">⚔️ 試合カード</span>';
+                }
+
+                return `
+                    <div class="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs flex items-center justify-between gap-2">
+                        <div class="space-y-1 min-w-0 flex-1">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                ${badge}
+                                <span class="font-bold text-slate-800 dark:text-slate-200 truncate">${title}</span>
+                            </div>
+                            <div class="flex items-center gap-3 text-[10px] text-slate-400 font-mono">
+                                <span>削除日時: ${dateStr}</span>
+                                <span class="text-rose-500 font-bold">自動消去まで あと ${remainingDays} 日</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <button onclick="restoreTrashItem('${item.trashId}')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-1 rounded-lg text-[11px] shadow-xs transition-all">
+                                🔄 復元
+                            </button>
+                            <button onclick="permanentDeleteTrashItem('${item.trashId}')" class="bg-slate-200 dark:bg-slate-700 hover:bg-rose-600 hover:text-white text-slate-600 dark:text-slate-300 font-bold px-2.5 py-1 rounded-lg text-[11px] transition-all">
+                                🗑️ 完全消去
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function restoreTrashItem(trashId) {
+            if (!state.trash) return;
+            const itemIndex = state.trash.findIndex(t => t.trashId === trashId);
+            if (itemIndex === -1) return;
+
+            const item = state.trash[itemIndex];
+
+            if (item.type === 'tournament') {
+                state.tournaments.push(item.data);
+                if (!state.activeTournamentId) {
+                    state.activeTournamentId = item.data.id;
+                }
+            } else if (item.type === 'match') {
+                let targetTour = state.tournaments.find(t => t.id === item.tournamentId);
+                if (!targetTour && state.tournaments.length > 0) {
+                    targetTour = state.tournaments[0];
+                }
+                if (targetTour) {
+                    if (!targetTour.matches) targetTour.matches = [];
+                    targetTour.matches.push(item.data);
+                } else {
+                    showToast('復元先の大会が見つかりません');
+                    return;
                 }
             }
+
+            state.trash.splice(itemIndex, 1);
+            saveStateToStorage();
+            renderDashboard();
+            renderMatchesGrouped();
+            recalculateDetailRanking();
+            renderPlayersView();
+            renderRankingsView();
+            renderTrashList();
+            showToast('データを元通りに復元しました！');
+        }
+
+        function permanentDeleteTrashItem(trashId) {
+            if (!state.trash) return;
+            state.trash = state.trash.filter(t => t.trashId !== trashId);
+            saveStateToStorage();
+            renderTrashList();
+            showToast('データを完全消去しました');
+        }
+
+        function emptyAllTrashWithConfirm() {
+            if (!state.trash || state.trash.length === 0) {
+                showToast('ゴミ箱は既に空です');
+                return;
+            }
+            openConfirmModal(
+                'ゴミ箱を空にする確認',
+                'ゴミ箱に入っているすべてのデータを完全消去しますか？（※復元できなくなります）',
+                () => {
+                    state.trash = [];
+                    saveStateToStorage();
+                    renderTrashList();
+                    showToast('ゴミ箱を完全に空にしました');
+                }
+            );
         }
 
         function openTournamentDetail(tourId) {
@@ -1811,14 +2020,33 @@
             });
         }
 
+        function resetTournamentMatches() {
+            const t = state.tournaments.find(item => item.id === state.editingTournamentId || item.id === state.activeTournamentId);
+            if (!t) return;
+
+            openConfirmModal(
+                '対戦表リセットの確認',
+                `「${t.name}」のすべての対戦カードと入力済みスコアをリセットしますか？この操作は取り消せません。`,
+                () => {
+                    t.matches = [];
+                    saveStateToStorage();
+                    closeTournamentModal();
+                    renderMatchesGrouped();
+                    recalculateDetailRanking();
+                    renderRankingsView();
+                    renderPlayersView();
+                    showToast('対戦表をすべてリセットしました');
+                }
+            );
+        }
+
         function triggerMatchScheduleGeneration() {
             const t = state.tournaments.find(item => item.id === state.activeTournamentId);
             if (!t) return;
-
             if (t.matches && t.matches.length > 0) {
                 openConfirmModal(
-                    '対戦表の再生成確認',
-                    '既に作成済みの対戦表が存在します。新しく作成し直しますか？既存の入力済みスコアは上書き・リセットされます。',
+                    '対戦表再生成の確認',
+                    'すでに対戦カードが存在します。再生成すると現在の対戦カードと入力スコアが上書きされます。続行しますか？',
                     () => {
                         generateMatchSchedule();
                     }
@@ -1826,1339 +2054,6 @@
             } else {
                 generateMatchSchedule();
             }
-        }
-
-        function generateMatchSchedule() {
-            const t = state.tournaments.find(item => item.id === state.activeTournamentId);
-            if (!t) return;
-            normalizeTournamentTeams(t);
-
-            const teams = (t.teams || []).map(tm => typeof tm === 'string' ? tm : tm.name);
-            if (teams.length < 2) {
-                showToast('対戦表を作成するには2チーム以上登録してください');
-                return;
-            }
-
-            if (!t.matches) t.matches = [];
-            const newMatches = [];
-            const courts = (t.courts && t.courts.length > 0) ? t.courts : ['Aコート'];
-
-            let currentHour = 10;
-            let currentMinute = 0;
-            let courtIdx = 0;
-
-            function getNextTimeString() {
-                if (currentHour === 12 && currentMinute >= 25) {
-                    currentHour = 13;
-                    currentMinute = 0;
-                }
-                if (currentHour >= 16) {
-                    currentHour = 15;
-                    currentMinute = 30;
-                }
-                const hStr = String(currentHour).padStart(2, '0');
-                const mStr = String(currentMinute).padStart(2, '0');
-                return `${hStr}:${mStr}`;
-            }
-
-            function advanceTime() {
-                courtIdx++;
-                if (courtIdx % courts.length === 0) {
-                    currentMinute += 25;
-                    if (currentMinute >= 60) {
-                        currentHour += Math.floor(currentMinute / 60);
-                        currentMinute = currentMinute % 60;
-                    }
-                }
-            }
-
-            const formatName = t.format || 'リーグ形式';
-            if (formatName === 'リーグ形式' || formatName === 'リーグ戦') {
-                for (let i = 0; i < teams.length; i++) {
-                    for (let j = i + 1; j < teams.length; j++) {
-                        const timeStr = getNextTimeString();
-                        const playingTeams = [teams[i], teams[j]];
-                        const restingTeams = teams.filter(tm => !playingTeams.includes(tm));
-                        const refTeam = restingTeams.length > 0 ? restingTeams[newMatches.length % restingTeams.length] : '運営';
-
-                        newMatches.push({
-                            id: 'm-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
-                            time: timeStr,
-                            court: courts[courtIdx % courts.length],
-                            teamA: teams[i],
-                            scoreA_1h: 0, scoreA_2h: 0, scoreA_1on1: 0,
-                            scoreB_1h: 0, scoreB_2h: 0, scoreB_1on1: 0,
-                            scoreA: 0, scoreB: 0,
-                            teamB: teams[j],
-                            refereeTeam: refTeam,
-                            isFinished: false
-                        });
-                        advanceTime();
-                    }
-                }
-            } else {
-                for (let i = 0; i < teams.length; i += 2) {
-                    if (teams[i + 1]) {
-                        const timeStr = getNextTimeString();
-                        const playingTeams = [teams[i], teams[i + 1]];
-                        const restingTeams = teams.filter(tm => !playingTeams.includes(tm));
-                        const refTeam = restingTeams.length > 0 ? restingTeams[newMatches.length % restingTeams.length] : '運営';
-
-                        newMatches.push({
-                            id: 'm-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
-                            time: timeStr,
-                            court: courts[courtIdx % courts.length],
-                            teamA: teams[i],
-                            scoreA_1h: 0, scoreA_2h: 0, scoreA_1on1: 0,
-                            scoreB_1h: 0, scoreB_2h: 0, scoreB_1on1: 0,
-                            scoreA: 0, scoreB: 0,
-                            teamB: teams[i + 1],
-                            refereeTeam: refTeam,
-                            isFinished: false
-                        });
-                        advanceTime();
-                    }
-                }
-            }
-
-            t.matches = newMatches;
-            saveStateToStorage();
-            renderMatchesGrouped();
-            recalculateDetailRanking();
-            renderRankingsView();
-            showToast('対戦表を自動生成しました');
-        }
-
-        function addMatchRow() {
-            const t = state.tournaments.find(item => item.id === state.activeTournamentId);
-            if (!t) return;
-            normalizeTournamentTeams(t);
-
-            const teams = (t.teams || []).map(tm => typeof tm === 'string' ? tm : tm.name);
-            const courts = (t.courts && t.courts.length > 0) ? t.courts : ['Aコート'];
-
-            if (!t.matches) t.matches = [];
-            t.matches.push({
-                id: 'm-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
-                time: '10:00',
-                court: courts[0],
-                teamA: teams[0] || 'チームA',
-                scoreA_1h: 0, scoreA_2h: 0, scoreA_1on1: 0,
-                scoreB_1h: 0, scoreB_2h: 0, scoreB_1on1: 0,
-                scoreA: 0, scoreB: 0,
-                teamB: teams[1] || 'チームB',
-                refereeTeam: teams[2] || '休みチーム',
-                isFinished: false
-            });
-
-            saveStateToStorage();
-            renderMatchesGrouped();
-            recalculateDetailRanking();
-            showToast('試合カードを手動追加しました');
-        }
-
-        function updateMatchField(matchId, field, value) {
-            const t = state.tournaments.find(item => item.id === state.activeTournamentId);
-            if (!t || !t.matches) return;
-            const m = t.matches.find(item => item.id === matchId);
-            if (!m) return;
-
-            m[field] = value;
-            saveStateToStorage();
-            recalculateDetailRanking();
-            renderRankingsView();
-        }
-
-        function adjustTotalScore(matchId, team, delta) {
-            const t = state.tournaments.find(item => item.id === state.activeTournamentId);
-            if (!t || !t.matches) return;
-            const m = t.matches.find(item => item.id === matchId);
-            if (!m) return;
-
-            if (team === 'A') {
-                m.scoreA = Math.max(0, (m.scoreA || 0) + delta);
-            } else {
-                m.scoreB = Math.max(0, (m.scoreB || 0) + delta);
-            }
-
-            saveStateToStorage();
-            renderMatchesGrouped();
-            recalculateDetailRanking();
-            renderRankingsView();
-        }
-
-        function adjustQuarterScore(matchId, field, delta) {
-            const t = state.tournaments.find(item => item.id === state.activeTournamentId);
-            if (!t || !t.matches) return;
-            const m = t.matches.find(item => item.id === matchId);
-            if (!m) return;
-
-            m[field] = Math.max(0, (m[field] || 0) + delta);
-            m.scoreA = (m.scoreA_1h || 0) + (m.scoreA_2h || 0) + (m.scoreA_1on1 || 0);
-            m.scoreB = (m.scoreB_1h || 0) + (m.scoreB_2h || 0) + (m.scoreB_1on1 || 0);
-
-            saveStateToStorage();
-            renderMatchesGrouped();
-            recalculateDetailRanking();
-            renderRankingsView();
-        }
-
-        function toggleMatchLock(matchId, finishState) {
-            const t = state.tournaments.find(item => item.id === state.activeTournamentId);
-            if (!t || !t.matches) return;
-            const m = t.matches.find(item => item.id === matchId);
-            if (!m) return;
-
-            m.isFinished = finishState;
-            saveStateToStorage();
-            renderMatchesGrouped();
-            recalculateDetailRanking();
-            renderRankingsView();
-            renderPlayersView();
-            showToast(finishState ? '試合を完了（確定・ランキングへ反映）しました' : '試合のロックを解除しました');
-        }
-
-        function deleteMatchRow(matchId) {
-            const t = state.tournaments.find(item => item.id === state.activeTournamentId);
-            if (!t || !t.matches) return;
-            t.matches = t.matches.filter(item => item.id !== matchId);
-
-            saveStateToStorage();
-            renderMatchesGrouped();
-            recalculateDetailRanking();
-            showToast('試合カードを削除しました');
-        }
-
-        function toggleEditMatchTeams(matchId) {
-            const t = state.tournaments.find(item => item.id === state.activeTournamentId);
-            if (t && t.matches) {
-                const m = t.matches.find(item => item.id === matchId);
-                if (m) {
-                    m._editingTeams = !m._editingTeams;
-                    renderMatchesGrouped();
-                }
-            }
-        }
-
-        function renderMatchesGrouped() {
-            updateGlobalSecondaryMatchesButtonUI();
-            const container = document.getElementById('matches-time-grouped-container');
-            if (!container) return;
-            container.innerHTML = '';
-
-            const t = state.tournaments.find(item => item.id === state.activeTournamentId);
-            if (!t) return;
-            normalizeTournamentTeams(t);
-
-            const isTournament = (t.category || '大会') === '大会';
-            const matches = t.matches || [];
-
-            if (matches.length === 0) {
-                container.innerHTML = `
-                    <div class="py-8 text-center space-y-3">
-                        <p class="text-xs text-slate-400">対戦カードがありません。</p>
-                        <div class="flex justify-center gap-2">
-                            <button onclick="addMatchRow()" class="bg-orange-600 text-white text-xs px-3.5 py-2 rounded-xl font-semibold shadow">＋ 手動で追加</button>
-                            <button onclick="triggerMatchScheduleGeneration()" class="bg-indigo-600 text-white text-xs px-3.5 py-2 rounded-xl font-semibold shadow">⚔️ 対戦表を自動作成 (${t.format || 'リーグ形式'})</button>
-                        </div>
-                    </div>`;
-                return;
-            }
-
-            const teamNameList = (t.teams || []).map(tm => typeof tm === 'string' ? tm : tm.name);
-
-            const courtNextActiveMap = {};
-            const matchesSortedByTime = [...matches].sort((a, b) => (a.time || '00:00').localeCompare(b.time || '00:00'));
-            
-            matchesSortedByTime.forEach(m => {
-                const cKey = m.court || 'Aコート';
-                if (!m.isFinished && !courtNextActiveMap[cKey]) {
-                    courtNextActiveMap[cKey] = m.id;
-                }
-            });
-
-            const sortedUniqueTimes = Array.from(new Set(matches.map(m => m.time || '10:00'))).sort((a, b) => a.localeCompare(b));
-            const timeToGameNumMap = {};
-            sortedUniqueTimes.forEach((tStr, idx) => {
-                timeToGameNumMap[tStr] = idx + 1;
-            });
-
-            const sortedMatches = [...matches].sort((a, b) => {
-                if (a.isFinished !== b.isFinished) return a.isFinished ? 1 : -1;
-                return (a.time || '00:00').localeCompare(b.time || '00:00');
-            });
-
-            const timeMap = {};
-            sortedMatches.forEach(m => {
-                const timeKey = m.time || '10:00';
-                if (!timeMap[timeKey]) timeMap[timeKey] = [];
-                timeMap[timeKey].push(m);
-            });
-
-            let globalGameIndex = 0;
-
-            Object.keys(timeMap).forEach(timeKey => {
-                const matchesAtTime = timeMap[timeKey];
-                const gameNum = timeToGameNumMap[timeKey] || 1;
-
-                let visibleMatchCardsHtml = [];
-
-                matchesAtTime.forEach(m => {
-                    globalGameIndex++;
-                    const isSecondOrLater = globalGameIndex > 1;
-
-                    if (isSecondOrLater && state.globalSecondaryCollapsed) {
-                        return;
-                    }
-
-                    const teamOptions = teamNameList.map(tm => `<option value="${tm}" ${tm === m.teamA ? 'selected' : ''}>${tm}</option>`).join('');
-                    const teamBOptions = teamNameList.map(tm => `<option value="${tm}" ${tm === m.teamB ? 'selected' : ''}>${tm}</option>`).join('');
-
-                    const sa1 = m.scoreA_1h ?? 0;
-                    const sa2 = m.scoreA_2h ?? 0;
-                    const sa1on1 = m.scoreA_1on1 ?? 0;
-                    const sb1 = m.scoreB_1h ?? 0;
-                    const sb2 = m.scoreB_2h ?? 0;
-                    const sb1on1 = m.scoreB_1on1 ?? 0;
-
-                    const isFinished = !!m.isFinished;
-                    const cKey = m.court || 'Aコート';
-                    const isNextActiveInCourt = courtNextActiveMap[cKey] === m.id;
-                    
-                    const isInputAllowed = !isFinished && isNextActiveInCourt;
-                    const isTeamsEditing = !!m._editingTeams;
-
-                    const grayscaleClass = isFinished 
-                        ? 'grayscale opacity-75 bg-slate-100 dark:bg-slate-900 border-slate-300 dark:border-slate-800' 
-                        : isNextActiveInCourt
-                            ? 'bg-white dark:bg-slate-900 border-orange-300 dark:border-orange-600 shadow-md ring-2 ring-orange-400/20'
-                            : 'bg-slate-50/80 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 opacity-80';
-
-                    const teamAControlHtml = `
-                        <div class="flex flex-col items-center gap-1.5 p-2 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700/80">
-                            <select ${(!isTeamsEditing || isFinished) ? 'disabled' : ''} onchange="updateMatchField('${m.id}', 'teamA', this.value)" class="w-full text-xs font-bold text-center text-slate-800 dark:text-white ${(!isTeamsEditing || isFinished) ? 'bg-transparent border-0' : 'bg-white dark:bg-slate-900 border border-indigo-400'} rounded p-1">
-                                ${teamOptions}
-                            </select>
-                            <span class="text-2xl font-black font-mono text-orange-600 dark:text-orange-400">${m.scoreA ?? 0}</span>
-                            ${(!isTournament && isInputAllowed) ? `
-                            <div class="flex flex-col items-center gap-1 w-full max-w-[80px]">
-                                <button onclick="adjustTotalScore('${m.id}', 'A', 1)" class="w-full py-1 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-bold text-xs shadow-xs flex items-center justify-center">＋1</button>
-                                <button onclick="adjustTotalScore('${m.id}', 'A', -1)" class="w-full py-1 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-700 dark:text-slate-200 rounded-lg font-bold text-xs flex items-center justify-center">ー1</button>
-                            </div>
-                            ` : ''}
-                        </div>`;
-
-                    const teamBControlHtml = `
-                        <div class="flex flex-col items-center gap-1.5 p-2 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700/80">
-                            <select ${(!isTeamsEditing || isFinished) ? 'disabled' : ''} onchange="updateMatchField('${m.id}', 'teamB', this.value)" class="w-full text-xs font-bold text-center text-slate-800 dark:text-white ${(!isTeamsEditing || isFinished) ? 'bg-transparent border-0' : 'bg-white dark:bg-slate-900 border border-indigo-400'} rounded p-1">
-                                ${teamBOptions}
-                            </select>
-                            <span class="text-2xl font-black font-mono text-indigo-600 dark:text-indigo-400">${m.scoreB ?? 0}</span>
-                            ${(!isTournament && isInputAllowed) ? `
-                            <div class="flex flex-col items-center gap-1 w-full max-w-[80px]">
-                                <button onclick="adjustTotalScore('${m.id}', 'B', 1)" class="w-full py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs shadow-xs flex items-center justify-center">＋1</button>
-                                <button onclick="adjustTotalScore('${m.id}', 'B', -1)" class="w-full py-1 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-700 dark:text-slate-200 rounded-lg font-bold text-xs flex items-center justify-center">ー1</button>
-                            </div>
-                            ` : ''}
-                        </div>`;
-
-                    const quarterSectionHtml = isTournament 
-                        ? `<div class="bg-slate-100/70 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-[11px] space-y-2">
-                                <div class="grid grid-cols-3 gap-1.5 sm:gap-2">
-                                    <div class="flex flex-col items-center bg-white dark:bg-slate-900 p-1.5 rounded-lg border border-slate-200 dark:border-slate-800">
-                                        <span class="text-slate-600 dark:text-slate-400 font-bold text-[10px]">前半 (10分)</span>
-                                        <div class="flex items-center gap-1 font-mono font-extrabold text-xs my-0.5">
-                                            <span>${sa1}</span>
-                                            <span>-</span>
-                                            <span>${sb1}</span>
-                                        </div>
-                                        ${isInputAllowed ? `
-                                        <div class="grid grid-cols-2 gap-1 w-full mt-1 pt-1 border-t dark:border-slate-800">
-                                            <div class="flex flex-col gap-0.5">
-                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreA_1h', 1)" class="py-0.5 bg-orange-600 text-white rounded text-[9px] font-bold">＋1</button>
-                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreA_1h', -1)" class="py-0.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded text-[9px] font-bold">ー1</button>
-                                            </div>
-                                            <div class="flex flex-col gap-0.5">
-                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreB_1h', 1)" class="py-0.5 bg-indigo-600 text-white rounded text-[9px] font-bold">＋1</button>
-                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreB_1h', -1)" class="py-0.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded text-[9px] font-bold">ー1</button>
-                                            </div>
-                                        </div>
-                                        ` : ''}
-                                    </div>
-
-                                    <div class="flex flex-col items-center bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-900 rounded p-1.5">
-                                        <span class="text-amber-800 dark:text-amber-400 font-bold text-[9.5px]">🏀 1on1</span>
-                                        <div class="flex items-center gap-1 font-mono font-extrabold text-xs my-0.5">
-                                            <span>${sa1on1}</span>
-                                            <span>-</span>
-                                            <span>${sb1on1}</span>
-                                        </div>
-                                        ${isInputAllowed ? `
-                                        <div class="grid grid-cols-2 gap-1 w-full mt-1 pt-1 border-t border-amber-200 dark:border-amber-900">
-                                            <div class="flex flex-col gap-0.5">
-                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreA_1on1', 1)" class="py-0.5 bg-orange-600 text-white rounded text-[9px] font-bold">＋1</button>
-                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreA_1on1', -1)" class="py-0.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded text-[9px] font-bold">ー1</button>
-                                            </div>
-                                            <div class="flex flex-col gap-0.5">
-                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreB_1on1', 1)" class="py-0.5 bg-indigo-600 text-white rounded text-[9px] font-bold">＋1</button>
-                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreB_1on1', -1)" class="py-0.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded text-[9px] font-bold">ー1</button>
-                                            </div>
-                                        </div>
-                                        ` : ''}
-                                    </div>
-
-                                    <div class="flex flex-col items-center bg-white dark:bg-slate-900 p-1.5 rounded-lg border border-slate-200 dark:border-slate-800">
-                                        <span class="text-slate-600 dark:text-slate-400 font-bold text-[10px]">後半 (10分)</span>
-                                        <div class="flex items-center gap-1 font-mono font-extrabold text-xs my-0.5">
-                                            <span>${sa2}</span>
-                                            <span>-</span>
-                                            <span>${sb2}</span>
-                                        </div>
-                                        ${isInputAllowed ? `
-                                        <div class="grid grid-cols-2 gap-1 w-full mt-1 pt-1 border-t dark:border-slate-800">
-                                            <div class="flex flex-col gap-0.5">
-                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreA_2h', 1)" class="py-0.5 bg-orange-600 text-white rounded text-[9px] font-bold">＋1</button>
-                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreA_2h', -1)" class="py-0.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded text-[9px] font-bold">ー1</button>
-                                            </div>
-                                            <div class="flex flex-col gap-0.5">
-                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreB_2h', 1)" class="py-0.5 bg-indigo-600 text-white rounded text-[9px] font-bold">＋1</button>
-                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreB_2h', -1)" class="py-0.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded text-[9px] font-bold">ー1</button>
-                                            </div>
-                                        </div>
-                                        ` : ''}
-                                    </div>
-                                </div>
-                            </div>`
-                        : '';
-
-                    const actionButtons = isFinished
-                        ? `<button onclick="toggleMatchLock('${m.id}', false)" class="bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border border-amber-300 dark:border-amber-800 text-xs px-3 py-1 rounded-lg font-semibold flex items-center gap-1">✏️ 再編集 (ロック解除)</button>`
-                        : `<button onclick="toggleMatchLock('${m.id}', true)" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1 rounded-lg font-semibold shadow flex items-center gap-1">🏁 試合終了 (確定)</button>`;
-
-                    const statusBadge = isFinished 
-                        ? '<span class="bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[9.5px] font-bold px-2 py-0.5 rounded-full">🔒 確定済み</span>'
-                        : isNextActiveInCourt
-                            ? '<span class="bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-400 text-[9.5px] font-bold px-2 py-0.5 rounded-full animate-pulse">🟢 進行中</span>'
-                            : '<span class="bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[9.5px] font-bold px-2 py-0.5 rounded-full">⏳ 待機中</span>';
-
-                    const editMenuHtml = isTeamsEditing ? `
-                        <div class="mt-2 pt-2 border-t border-indigo-100 dark:border-slate-800 flex items-center justify-between text-xs bg-indigo-50/50 dark:bg-indigo-950/30 p-2 rounded-xl">
-                            <span class="font-bold text-indigo-700 dark:text-indigo-300 text-[11px]">⚙️ 試合設定編集モード</span>
-                            <button onclick="requestPasscodeProtection(() => deleteMatchRow('${m.id}'))" class="bg-rose-600 hover:bg-rose-700 text-white px-2.5 py-1 rounded-lg font-bold text-[11px] shadow-xs flex items-center gap-1">
-                                <i class="fa-solid fa-trash-can"></i> この試合を削除
-                            </button>
-                        </div>
-                    ` : '';
-
-                    visibleMatchCardsHtml.push(`
-                        <div class="border rounded-xl p-3.5 shadow-sm space-y-3 transition-all ${grayscaleClass}">
-                            <div class="flex justify-between items-center text-xs border-b border-slate-200/80 dark:border-slate-800 pb-1.5">
-                                <div class="flex items-center gap-1.5">
-                                    <span class="font-bold text-orange-600 dark:text-orange-400 font-mono">${m.court || 'コート未定'}</span>
-                                    ${statusBadge}
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md hidden sm:inline">
-                                        📣 審判: ${m.refereeTeam || '休みチーム'}
-                                    </span>
-                                    <button onclick="toggleEditMatchTeams('${m.id}')" class="text-indigo-600 dark:text-indigo-400 hover:underline font-bold text-[11px] flex items-center gap-0.5">
-                                        <i class="fa-solid fa-pen-to-square"></i> ${isTeamsEditing ? '完了' : '試合編集'}
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-3 items-start">
-                                ${teamAControlHtml}
-                                ${teamBControlHtml}
-                            </div>
-
-                            ${quarterSectionHtml}
-                            ${editMenuHtml}
-
-                            <div class="flex justify-end pt-1">
-                                ${actionButtons}
-                            </div>
-                        </div>
-                    `);
-                });
-
-                if (visibleMatchCardsHtml.length > 0) {
-                    const block = document.createElement('div');
-                    block.className = 'bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-xl p-3.5 space-y-3';
-
-                    block.innerHTML = `
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs font-bold text-slate-700 dark:text-slate-300 font-mono bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 px-2.5 py-1 rounded-lg shadow-sm">
-                                🏀 GAME ${gameNum} &nbsp;|&nbsp; 🕒 開始時刻: ${timeKey}
-                            </span>
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">${visibleMatchCardsHtml.join('')}</div>
-                    `;
-                    container.appendChild(block);
-                }
-            });
-
-            if (state.globalSecondaryCollapsed && matches.length > 1) {
-                const hiddenCount = matches.length - 1;
-                const note = document.createElement('div');
-                note.className = "bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 rounded-xl p-3 text-center text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center justify-between";
-                note.innerHTML = `
-                    <span>🙈 2試合目以降の ${hiddenCount} 試合を非表示 (最小化) 中</span>
-                    <button onclick="toggleGlobalSecondaryMatchesCollapse()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded-lg shadow-xs text-xs font-bold">
-                        全試合表示 (最大化) ➔
-                    </button>
-                `;
-                container.appendChild(note);
-            }
-        }
-
-        function recalculateDetailRanking() {
-            const tbody = document.getElementById('detail-ranking-tbody');
-            if (!tbody) return;
-            tbody.innerHTML = '';
-
-            const t = state.tournaments.find(item => item.id === state.activeTournamentId);
-            if (!t) return;
-            normalizeTournamentTeams(t);
-
-            const statsMap = {};
-            (t.teams || []).forEach(tm => {
-                const name = typeof tm === 'string' ? tm : tm.name;
-                const img = typeof tm === 'object' ? tm.image : null;
-                statsMap[name] = {
-                    name: name,
-                    image: img,
-                    played: 0,
-                    won: 0,
-                    lost: 0,
-                    ptsFor: 0,
-                    ptsAgainst: 0,
-                    diff: 0
-                };
-            });
-
-            (t.matches || []).forEach(m => {
-                if (!m.isFinished) return;
-                const tA = m.teamA;
-                const tB = m.teamB;
-                const sA = m.scoreA || 0;
-                const sB = m.scoreB || 0;
-
-                if (statsMap[tA]) {
-                    statsMap[tA].played++;
-                    statsMap[tA].ptsFor += sA;
-                    statsMap[tA].ptsAgainst += sB;
-                    if (sA > sB) {
-                        statsMap[tA].won++;
-                    } else if (sA < sB) {
-                        statsMap[tA].lost++;
-                    }
-                }
-
-                if (statsMap[tB]) {
-                    statsMap[tB].played++;
-                    statsMap[tB].ptsFor += sB;
-                    statsMap[tB].ptsAgainst += sA;
-                    if (sB > sA) {
-                        statsMap[tB].won++;
-                    } else if (sB < sA) {
-                        statsMap[tB].lost++;
-                    }
-                }
-            });
-
-            const standings = Object.values(statsMap).map(st => {
-                st.diff = st.ptsFor - st.ptsAgainst;
-                return st;
-            }).sort((a, b) => {
-                if (b.diff !== a.diff) return b.diff - a.diff;
-                if (b.ptsFor !== a.ptsFor) return b.ptsFor - a.ptsFor;
-                return b.won - a.won;
-            });
-
-            standings.forEach((st, idx) => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50 dark:hover:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 font-semibold";
-
-                const rankDisplay = idx === 0 ? '🥇 1' : idx === 1 ? '🥈 2' : idx === 2 ? '🥉 3' : `${idx + 1}`;
-                const logoHtml = st.image 
-                    ? `<img src="${st.image}" class="w-6 h-6 rounded-full object-cover border inline-block mr-1.5">` 
-                    : `<span class="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 text-[10px] font-bold flex items-center justify-center inline-flex mr-1.5 text-slate-600 dark:text-slate-300">🛡️</span>`;
-
-                tr.innerHTML = `
-                    <td class="p-2.5 text-center font-bold text-slate-800 dark:text-slate-200">${rankDisplay}</td>
-                    <td class="p-2.5 text-left font-bold text-slate-900 dark:text-white flex items-center">${logoHtml}${st.name}</td>
-                    <td class="p-2.5 text-center font-mono font-extrabold bg-emerald-50/50 dark:bg-emerald-950/30 ${st.diff > 0 ? 'text-emerald-600 dark:text-emerald-400' : st.diff < 0 ? 'text-red-500 dark:text-red-400' : 'text-slate-500'}">${st.diff > 0 ? '+' + st.diff : st.diff}</td>
-                    <td class="p-2.5 text-center font-mono">${st.played}</td>
-                    <td class="p-2.5 text-center font-mono text-emerald-600 dark:text-emerald-400">${st.won}</td>
-                    <td class="p-2.5 text-center font-mono text-red-500 dark:text-red-400">${st.lost}</td>
-                    <td class="p-2.5 text-center font-mono">${st.ptsFor}</td>
-                    <td class="p-2.5 text-center font-mono text-slate-400 dark:text-slate-500">${st.ptsAgainst}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function openMatrixModal() {
-            const t = state.tournaments.find(item => item.id === state.activeTournamentId);
-            if (!t) return;
-            normalizeTournamentTeams(t);
-
-            const teams = (t.teams || []).map(tm => typeof tm === 'string' ? tm : tm.name);
-            const matches = t.matches || [];
-
-            const table = document.getElementById('matrix-table');
-            if (!table) return;
-            table.innerHTML = '';
-
-            let headerRow = `<tr class="bg-slate-100 dark:bg-slate-800 font-bold text-slate-700 dark:text-slate-200"><th class="p-2 border border-slate-300 dark:border-slate-700">チーム</th>`;
-            teams.forEach(tm => {
-                headerRow += `<th class="p-2 border border-slate-300 dark:border-slate-700">${tm}</th>`;
-            });
-            headerRow += `</tr>`;
-            table.innerHTML += headerRow;
-
-            teams.forEach(tA => {
-                let row = `<tr><td class="p-2 font-bold bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-left text-slate-900 dark:text-white">${tA}</td>`;
-                teams.forEach(tB => {
-                    if (tA === tB) {
-                        row += `<td class="p-2 bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 font-mono text-slate-400">ー</td>`;
-                    } else {
-                        const match = matches.find(m => (m.teamA === tA && m.teamB === tB) || (m.teamA === tB && m.teamB === tA));
-                        if (match) {
-                            const isAFirst = match.teamA === tA;
-                            const scoreSelf = isAFirst ? match.scoreA : match.scoreB;
-                            const scoreOpp = isAFirst ? match.scoreB : match.scoreA;
-                            if (match.isFinished || (match.scoreA > 0 || match.scoreB > 0)) {
-                                const resultColor = scoreSelf > scoreOpp ? 'text-emerald-600 font-bold' : scoreSelf < scoreOpp ? 'text-red-500 font-bold' : 'text-slate-600 dark:text-slate-300';
-                                row += `<td class="p-2 border border-slate-300 dark:border-slate-700 font-mono ${resultColor}">${scoreSelf} - ${scoreOpp}</td>`;
-                            } else {
-                                row += `<td class="p-2 border border-slate-300 dark:border-slate-700 text-slate-400 font-mono">未対戦</td>`;
-                            }
-                        } else {
-                            row += `<td class="p-2 border border-slate-300 dark:border-slate-700 text-slate-400 font-mono">-</td>`;
-                        }
-                    }
-                });
-                row += `</tr>`;
-                table.innerHTML += row;
-            });
-
-            document.getElementById('modal-matrix-view').classList.remove('hidden');
-        }
-
-        function closeMatrixModal() {
-            document.getElementById('modal-matrix-view').classList.add('hidden');
-        }
-
-        function exportMatrixPNG() {
-            const area = document.getElementById('printable-matrix-area');
-            if (!area) return;
-
-            const originalOverflow = area.style.overflow;
-            const originalWidth = area.style.width;
-            area.style.overflow = 'visible';
-            area.style.width = area.scrollWidth + 'px';
-
-            html2canvas(area, {
-                scrollX: 0,
-                scrollY: 0,
-                width: area.scrollWidth,
-                windowWidth: area.scrollWidth + 100
-            }).then(canvas => {
-                area.style.overflow = originalOverflow;
-                area.style.width = originalWidth;
-
-                const link = document.createElement('a');
-                link.download = '対戦マトリックス_' + new Date().toISOString().split('T')[0] + '.png';
-                link.href = canvas.toDataURL();
-                link.click();
-                showToast('対戦マトリックス画像を保存しました');
-            }).catch(() => {
-                area.style.overflow = originalOverflow;
-                area.style.width = originalWidth;
-                showToast('画像保存に失敗しました');
-            });
-        }
-
-        function exportMatrixPDF() {
-            const area = document.getElementById('printable-matrix-area');
-            if (!area) return;
-
-            const originalOverflow = area.style.overflow;
-            const originalWidth = area.style.width;
-            area.style.overflow = 'visible';
-            area.style.width = area.scrollWidth + 'px';
-
-            html2canvas(area, {
-                scrollX: 0,
-                scrollY: 0,
-                width: area.scrollWidth,
-                windowWidth: area.scrollWidth + 100
-            }).then(canvas => {
-                area.style.overflow = originalOverflow;
-                area.style.width = originalWidth;
-
-                const imgData = canvas.toDataURL('image/png');
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF('l', 'mm', 'a4');
-                const imgProps = pdf.getImageProperties(imgData);
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-                pdf.addImage(imgData, 'PNG', 0, 10, pdfWidth, pdfHeight);
-                pdf.save('対戦マトリックス_' + new Date().toISOString().split('T')[0] + '.pdf');
-                showToast('対戦マトリックスPDFを出力しました');
-            }).catch(() => {
-                area.style.overflow = originalOverflow;
-                area.style.width = originalWidth;
-                showToast('PDF出力に失敗しました');
-            });
-        }
-
-        function printMatrix() {
-            window.print();
-        }
-
-        function renderPlayersView() {
-            const tbody = document.getElementById('players-table-tbody');
-            if (!tbody) return;
-            tbody.innerHTML = '';
-
-            const search = (document.getElementById('player-search-input')?.value || '').toLowerCase();
-            const sort = document.getElementById('player-sort-select')?.value || 'id';
-
-            const totalCount = state.players.length;
-            const maleCount = state.players.filter(p => p.gender === '男').length;
-            const femaleCount = state.players.filter(p => p.gender === '女').length;
-
-            const posCounts = { PG: 0, SG: 0, SF: 0, PF: 0, C: 0, unset: 0 };
-            state.players.forEach(p => {
-                if (!p.positions || p.positions.length === 0) {
-                    posCounts.unset++;
-                } else {
-                    p.positions.forEach(pos => {
-                        if (posCounts[pos] !== undefined) posCounts[pos]++;
-                    });
-                }
-            });
-
-            const summaryEl = document.getElementById('position-count-summary');
-            if (summaryEl) {
-                summaryEl.innerHTML = `
-                    <span class="bg-orange-100 dark:bg-orange-950 text-orange-700 dark:text-orange-400 px-2 py-0.5 rounded-lg border border-orange-200 dark:border-orange-800">
-                        👥 全 ${totalCount} 名 (男:${maleCount} / 女:${femaleCount})
-                    </span>
-                    <span class="bg-slate-200 dark:bg-slate-700/80 px-2 py-0.5 rounded-lg text-slate-700 dark:text-slate-300">
-                        PG:${posCounts.PG} &nbsp;SG:${posCounts.SG} &nbsp;SF:${posCounts.SF} &nbsp;PF:${posCounts.PF} &nbsp;C:${posCounts.C}
-                        ${posCounts.unset > 0 ? `<span class="opacity-70">&nbsp;(未設定:${posCounts.unset})</span>` : ''}
-                    </span>
-                `;
-            }
-
-            const playerTotalScoreMap = {};
-            state.tournaments.forEach(tour => {
-                (tour.matches || []).forEach(m => {
-                    if (!m.isFinished) return;
-                    const teamAObj = tour.teams.find(t => typeof t === 'object' ? t.name === m.teamA : t === m.teamA);
-                    const teamBObj = tour.teams.find(t => typeof t === 'object' ? t.name === m.teamB : t === m.teamB);
-                    if (teamAObj && teamAObj.members) {
-                        const mCount = teamAObj.members.filter(mb => !GUEST_PLAYERS.includes(mb)).length || 1;
-                        teamAObj.members.forEach(mb => {
-                            playerTotalScoreMap[mb] = (playerTotalScoreMap[mb] || 0) + Math.round((m.scoreA || 0) / mCount);
-                        });
-                    }
-                    if (teamBObj && teamBObj.members) {
-                        const mCount = teamBObj.members.filter(mb => !GUEST_PLAYERS.includes(mb)).length || 1;
-                        teamBObj.members.forEach(mb => {
-                            playerTotalScoreMap[mb] = (playerTotalScoreMap[mb] || 0) + Math.round((m.scoreB || 0) / mCount);
-                        });
-                    }
-                });
-            });
-
-            let list = [...state.players].map(p => {
-                return { ...p, pts: playerTotalScoreMap[p.name] || 0 };
-            }).filter(p => {
-                return (p.name || '').toLowerCase().includes(search) || 
-                       (p.id || '').toLowerCase().includes(search) || 
-                       (p.number || '').toString().includes(search);
-            });
-
-            if (sort === 'pts') {
-                list.sort((a, b) => (b.pts || 0) - (a.pts || 0));
-            } else if (sort === 'name') {
-                list.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ja'));
-            } else {
-                list.sort((a, b) => (a.id || '').localeCompare(b.id || ''));
-            }
-
-            list.forEach(p => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer";
-                tr.onclick = (e) => {
-                    if (e.target.closest('button')) return;
-                    openPlayerDetailModal(p.id);
-                };
-
-                const genderBadge = p.gender === '男' 
-                    ? `<span class="bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 font-bold px-2 py-0.5 rounded-full text-[10px]">男</span>`
-                    : `<span class="bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 font-bold px-2 py-0.5 rounded-full text-[10px]">女</span>`;
-
-                const posBadges = (p.positions && p.positions.length > 0) 
-                    ? p.positions.map(pos => `<span class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold px-1.5 py-0.5 rounded text-[10px] mr-0.5">${pos}</span>`).join('')
-                    : `<span class="text-slate-400 font-normal">未設定</span>`;
-
-                const now = new Date();
-                const lastDate = p.lastDate ? new Date(p.lastDate) : new Date(0);
-                const diffDays = (now - lastDate) / (1000 * 3600 * 24);
-                const isActive = diffDays <= 90;
-
-                const statusBadge = isActive 
-                    ? `<span class="bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full">🟢 アクティブ</span>`
-                    : `<span class="bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-bold px-2 py-0.5 rounded-full">⚪ 非アクティブ</span>`;
-
-                const ageStr = p.birth ? `${calculateAge(p.birth)}歳` : '-';
-
-                tr.innerHTML = `
-                    <td class="p-2.5 font-mono text-left font-bold text-slate-700 dark:text-slate-300">${p.id}</td>
-                    <td class="p-2.5 text-center font-mono font-bold text-orange-600 dark:text-orange-400">${p.number || '-'}</td>
-                    <td class="p-2.5 font-bold text-slate-900 dark:text-white">${p.name}</td>
-                    <td class="p-2.5 text-center">${genderBadge}</td>
-                    <td class="p-2.5 text-center">${posBadges}</td>
-                    <td class="p-2.5 text-center font-mono font-extrabold text-orange-600 dark:text-orange-400 bg-orange-50/50 dark:bg-orange-950/40 rounded-lg">${p.pts} PTS</td>
-                    <td class="p-2.5 text-center">${statusBadge}</td>
-                    <td class="p-2.5 text-center font-mono text-amber-800 dark:text-amber-400 admin-only-col ${state.isAdminUnlocked ? '' : 'hidden'}">${ageStr} / ${p.height ? p.height + 'cm' : '-'} / ${p.exp ? p.exp + '年' : '-'}</td>
-                    <td class="p-2.5 text-right">
-                        <button onclick="requestPasscodeProtection(() => openAddPlayerModal('${p.id}'))" class="text-slate-500 hover:text-slate-800 dark:hover:text-white font-bold text-xs bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-300 dark:border-slate-700">編集</button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function checkDuplicatePlayerName(val) {
-            const trimmed = (val || '').trim();
-            const warningEl = document.getElementById('player-duplicate-warning');
-            if (!warningEl) return;
-            if (!trimmed) {
-                warningEl.classList.add('hidden');
-                return;
-            }
-            const currentId = document.getElementById('player-form-id')?.value;
-            const isDup = state.players.some(p => p.name === trimmed && p.id !== currentId);
-            if (isDup) {
-                warningEl.classList.remove('hidden');
-            } else {
-                warningEl.classList.add('hidden');
-            }
-        }
-
-        function openPlayerDetailModal(playerId) {
-            const p = state.players.find(item => item.id === playerId);
-            if (!p) return;
-
-            document.getElementById('player-detail-name').innerText = p.name;
-            document.getElementById('player-detail-id').innerText = `ID: ${p.id}`;
-            document.getElementById('player-detail-number-badge').innerText = `#${p.number || '-'}`;
-
-            const now = new Date();
-            const lastDate = p.lastDate ? new Date(p.lastDate) : new Date(0);
-            const diffDays = (now - lastDate) / (1000 * 3600 * 24);
-            const isActive = diffDays <= 90;
-
-            document.getElementById('player-detail-status-badge').innerHTML = isActive 
-                ? `<span class="bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded-full text-[10px] font-bold">🟢 アクティブ</span>`
-                : `<span class="bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded-full text-[10px] font-bold">⚪ 非アクティブ</span>`;
-
-            const ageStr = p.birth ? `${calculateAge(p.birth)}歳` : '-';
-            const posBadges = (p.positions && p.positions.length > 0) ? p.positions.join('/') : '未設定';
-
-            document.getElementById('player-detail-gender-pos').innerText = `${p.gender || '未設定'} / ${posBadges}`;
-            document.getElementById('player-detail-body-info').innerText = `${ageStr} / ${p.height ? p.height + 'cm' : '-'} / ${p.exp ? p.exp + '年' : '-'}`;
-
-            let totalPts = 0;
-            let playedCount = 0;
-            const historyLogs = [];
-
-            state.tournaments.forEach(tour => {
-                (tour.matches || []).forEach(m => {
-                    if (!m.isFinished) return;
-
-                    const teamAObj = (tour.teams || []).find(t => typeof t === 'object' ? t.name === m.teamA : t === m.teamA);
-                    const teamBObj = (tour.teams || []).find(t => typeof t === 'object' ? t.name === m.teamB : t === m.teamB);
-
-                    let playedInThisMatch = false;
-                    let earnedPts = 0;
-
-                    if (teamAObj && teamAObj.members && teamAObj.members.includes(p.name)) {
-                        playedInThisMatch = true;
-                        const mCount = teamAObj.members.filter(mb => !GUEST_PLAYERS.includes(mb)).length || 1;
-                        earnedPts = Math.round((m.scoreA || 0) / mCount);
-                    } else if (teamBObj && teamBObj.members && teamBObj.members.includes(p.name)) {
-                        playedInThisMatch = true;
-                        const mCount = teamBObj.members.filter(mb => !GUEST_PLAYERS.includes(mb)).length || 1;
-                        earnedPts = Math.round((m.scoreB || 0) / mCount);
-                    }
-
-                    if (playedInThisMatch) {
-                        totalPts += earnedPts;
-                        playedCount++;
-                        historyLogs.push({
-                            date: tour.date || '日時未設定',
-                            tourName: tour.name,
-                            matchSummary: `${m.teamA} ${m.scoreA || 0} - ${m.scoreB || 0} ${m.teamB}`,
-                            pts: earnedPts
-                        });
-                    }
-                });
-            });
-
-            document.getElementById('player-detail-total-pts').innerText = `${totalPts} PTS`;
-            document.getElementById('player-detail-avg-pts').innerText = playedCount > 0 ? (totalPts / playedCount).toFixed(1) : '0.0';
-            document.getElementById('player-detail-matches-count').innerText = `${playedCount} 試合`;
-            document.getElementById('player-history-count-tag').innerText = `${historyLogs.length} 件`;
-
-            const historyContainer = document.getElementById('player-match-history-container');
-            if (historyContainer) {
-                if (historyLogs.length === 0) {
-                    historyContainer.innerHTML = `<p class="text-slate-400 text-center py-4 text-xs font-semibold">過去の完了済み試合ログがありません。</p>`;
-                } else {
-                    historyContainer.innerHTML = historyLogs.map(log => `
-                        <div class="bg-slate-50 dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                            <div>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-[10px] font-mono text-slate-400">${log.date}</span>
-                                    <span class="font-bold text-slate-800 dark:text-slate-200">${log.tourName}</span>
-                                </div>
-                                <div class="text-[11px] text-slate-500 dark:text-slate-400 font-mono mt-0.5">${log.matchSummary}</div>
-                            </div>
-                            <div class="text-right">
-                                <span class="font-mono font-extrabold text-orange-600 dark:text-orange-400 text-xs">+${log.pts} PTS</span>
-                            </div>
-                        </div>
-                    `).join('');
-                }
-            }
-
-            document.getElementById('modal-player-detail').classList.remove('hidden');
-        }
-
-        function closePlayerDetailModal() {
-            document.getElementById('modal-player-detail').classList.add('hidden');
-        }
-
-        function renderRankingsView() {
-            const grid = document.getElementById('rankings-cards-grid');
-            if (!grid) return;
-            grid.innerHTML = '';
-
-            const playerStatsMap = {};
-            state.players.forEach(p => {
-                playerStatsMap[p.name] = {
-                    name: p.name,
-                    pts: 0,
-                    fg2m: 0,
-                    fg2a: 0,
-                    fg3m: 0,
-                    fg3a: 0,
-                    ftm: 0,
-                    fta: 0,
-                    reb: 0,
-                    ast: 0,
-                    games: 0
-                };
-            });
-
-            const now = new Date();
-            let startDate = null;
-            let endDate = null;
-
-            if (state.rankingPeriod === 'monthly') {
-                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-                endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-            } else if (state.rankingPeriod === 'yearly') {
-                startDate = new Date(now.getFullYear(), 0, 1);
-                endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
-            } else if (state.rankingPeriod === 'custom') {
-                const fromVal = document.getElementById('ranking-date-from')?.value;
-                const toVal = document.getElementById('ranking-date-to')?.value;
-                if (fromVal) startDate = new Date(fromVal + 'T00:00:00');
-                if (toVal) endDate = new Date(toVal + 'T23:59:59');
-            }
-
-            state.tournaments.forEach(tour => {
-                if (state.rankingMatchType !== 'ALL' && (tour.category || '大会') !== state.rankingMatchType) return;
-
-                if (tour.date && (startDate || endDate)) {
-                    const tourDate = new Date(tour.date + 'T00:00:00');
-                    if (startDate && tourDate < startDate) return;
-                    if (endDate && tourDate > endDate) return;
-                }
-
-                (tour.matches || []).forEach(m => {
-                    if (!m.isFinished) return;
-
-                    const teamAObj = (tour.teams || []).find(t => typeof t === 'object' ? t.name === m.teamA : t === m.teamA);
-                    const teamBObj = (tour.teams || []).find(t => typeof t === 'object' ? t.name === m.teamB : t === m.teamB);
-
-                    if (teamAObj && teamAObj.members) {
-                        const count = teamAObj.members.filter(mb => !GUEST_PLAYERS.includes(mb)).length || 1;
-                        teamAObj.members.forEach(mb => {
-                            if (playerStatsMap[mb]) {
-                                const ptsA = m.scoreA || 0;
-                                playerStatsMap[mb].pts += Math.round(ptsA / count);
-                                playerStatsMap[mb].fg2m += Math.round((ptsA * 0.5) / count);
-                                playerStatsMap[mb].fg3m += Math.round((ptsA * 0.3) / count);
-                                playerStatsMap[mb].ftm += Math.round((ptsA * 0.2) / count);
-                                playerStatsMap[mb].reb += Math.round((ptsA * 0.4) / count);
-                                playerStatsMap[mb].ast += Math.round((ptsA * 0.25) / count);
-                                playerStatsMap[mb].games += 1;
-                            }
-                        });
-                    }
-
-                    if (teamBObj && teamBObj.members) {
-                        const count = teamBObj.members.filter(mb => !GUEST_PLAYERS.includes(mb)).length || 1;
-                        teamBObj.members.forEach(mb => {
-                            if (playerStatsMap[mb]) {
-                                const ptsB = m.scoreB || 0;
-                                playerStatsMap[mb].pts += Math.round(ptsB / count);
-                                playerStatsMap[mb].fg2m += Math.round((ptsB * 0.5) / count);
-                                playerStatsMap[mb].fg3m += Math.round((ptsB * 0.3) / count);
-                                playerStatsMap[mb].ftm += Math.round((ptsB * 0.2) / count);
-                                playerStatsMap[mb].reb += Math.round((ptsB * 0.4) / count);
-                                playerStatsMap[mb].ast += Math.round((ptsB * 0.25) / count);
-                                playerStatsMap[mb].games += 1;
-                            }
-                        });
-                    }
-                });
-            });
-
-            const playersList = Object.values(playerStatsMap);
-
-            function buildCard(title, list, valueFn) {
-                const card = document.createElement('div');
-                card.className = "bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-2xl p-3.5 sm:p-4 shadow-xs space-y-2.5";
-
-                let rowsHtml = '';
-                list.slice(0, 5).forEach((item, idx) => {
-                    const badgeColor = idx === 0 ? 'bg-amber-400 text-white' : idx === 1 ? 'bg-slate-300 text-slate-800' : idx === 2 ? 'bg-amber-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300';
-
-                    rowsHtml += `
-                        <div class="flex items-center justify-between text-xs py-1.5 border-b border-slate-200/60 dark:border-slate-700/60 gap-2">
-                            <div class="flex items-center gap-2 min-w-0">
-                                <span class="w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] shrink-0 ${badgeColor}">${idx + 1}</span>
-                                <span class="font-bold text-slate-800 dark:text-slate-200 truncate text-xs sm:text-sm">${item.name}</span>
-                            </div>
-                            <div class="text-right font-mono shrink-0 pl-1">
-                                <span class="font-extrabold text-orange-600 dark:text-orange-400 text-xs sm:text-sm">${valueFn(item)}</span>
-                            </div>
-                        </div>
-                    `;
-                });
-
-                card.innerHTML = `
-                    <h3 class="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white border-b pb-2 dark:border-slate-700 flex items-center gap-1.5">${title}</h3>
-                    <div class="space-y-0.5">${rowsHtml || '<p class="text-xs text-slate-400 py-2">データなし</p>'}</div>
-                `;
-                return card;
-            }
-
-            const topPts = [...playersList].sort((a,b) => b.pts - a.pts);
-            const top2P  = [...playersList].sort((a,b) => b.fg2m - a.fg2m);
-            const top3P  = [...playersList].sort((a,b) => b.fg3m - a.fg3m);
-            const topFT  = [...playersList].sort((a,b) => b.ftm - a.ftm);
-            const topReb = [...playersList].sort((a,b) => b.reb - a.reb);
-            const topAst = [...playersList].sort((a,b) => b.ast - a.ast);
-
-            grid.appendChild(buildCard('🏀 得点王 (PTS)', topPts, p => p.pts + ' PTS'));
-            grid.appendChild(buildCard('🎯 2P スナイパー (2PM)', top2P, p => p.fg2m + ' 本'));
-            grid.appendChild(buildCard('⚡ 3P スナイパー (3PM)', top3P, p => p.fg3m + ' 本'));
-            grid.appendChild(buildCard('🎯 フリースロー王 (FTM)', topFT, p => p.ftm + ' 本'));
-            grid.appendChild(buildCard('🛡️ リバウンド王 (REB)', topReb, p => p.reb + ' REB'));
-            grid.appendChild(buildCard('🤝 アシスト王 (AST)', topAst, p => p.ast + ' AST'));
-        }
-
-        function changeRankingPeriod(p) {
-            state.rankingPeriod = p;
-            document.querySelectorAll('[id^="period-btn-"]').forEach(btn => {
-                btn.classList.remove('bg-white', 'dark:bg-slate-700', 'shadow-xs', 'text-orange-600', 'dark:text-orange-400');
-                btn.classList.add('text-slate-600', 'dark:text-slate-300');
-            });
-            const activeBtn = document.getElementById(`period-btn-${p}`);
-            if (activeBtn) activeBtn.classList.add('bg-white', 'dark:bg-slate-700', 'shadow-xs', 'text-orange-600', 'dark:text-orange-400');
-
-            const customContainer = document.getElementById('custom-period-container');
-            if (customContainer) {
-                if (p === 'custom') customContainer.classList.remove('hidden');
-                else customContainer.classList.add('hidden');
-            }
-
-            renderRankingsView();
-        }
-
-        function changeRankingMatchType(type) {
-            state.rankingMatchType = type;
-            document.querySelectorAll('[id^="matchtype-btn-"]').forEach(btn => {
-                btn.classList.remove('bg-orange-600', 'text-white');
-                btn.classList.add('bg-slate-200', 'dark:bg-slate-800', 'text-slate-700', 'dark:text-slate-300');
-            });
-            const activeBtn = document.getElementById(`matchtype-btn-${type}`);
-            if (activeBtn) {
-                activeBtn.classList.add('bg-orange-600', 'text-white');
-                activeBtn.classList.remove('bg-slate-200', 'dark:bg-slate-800', 'text-slate-700', 'dark:text-slate-300');
-            }
-            renderRankingsView();
-        }
-
-        function renderNewsView() {
-            const newsEl = document.getElementById('news-content-display');
-            if (newsEl) newsEl.innerText = state.newsContent;
-            const channelIdEl = document.getElementById('youtube-channel-id-display');
-            if (channelIdEl) channelIdEl.innerText = `ID: ${state.youtubeChannelId}`;
-        }
-
-        function editNewsContent() {
-            const val = prompt('お知らせ内容を入力:', state.newsContent);
-            if (val !== null) {
-                state.newsContent = val;
-                saveStateToStorage();
-                renderNewsView();
-                showToast('お知らせを更新しました');
-            }
-        }
-
-        function renderFullTeamsView() {
-            const grid = document.getElementById('full-teams-list-grid');
-            if (!grid) return;
-            grid.innerHTML = '';
-
-            const t = state.tournaments.find(item => item.id === state.activeTournamentId);
-            if (!t) return;
-            normalizeTournamentTeams(t);
-
-            (t.teams || []).forEach((tm, idx) => {
-                const card = document.createElement('div');
-                card.className = "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-3";
-
-                const logoHtml = tm.image 
-                    ? `<img src="${tm.image}" class="w-10 h-10 rounded-full object-cover border dark:border-slate-700 shadow-xs">` 
-                    : `<div class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 border dark:border-slate-700 text-slate-500 font-bold flex items-center justify-center text-sm">🛡️</div>`;
-
-                const memberBadges = (tm.members || []).map(mb => {
-                    const isGuest = GUEST_PLAYERS.includes(mb) || mb.includes('ゲスト');
-                    const bg = isGuest 
-                        ? 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800' 
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700';
-                    return `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${bg}">${mb}</span>`;
-                }).join('');
-
-                card.innerHTML = `
-                    <div class="flex items-center justify-between border-b pb-2 dark:border-slate-800">
-                        <div class="flex items-center gap-2">
-                            ${logoHtml}
-                            <div>
-                                <span class="text-[10px] font-mono font-bold text-slate-400 block">${tm.code || 'T-0' + (idx+1)}</span>
-                                <h3 class="font-extrabold text-slate-900 dark:text-white text-sm">${tm.name}</h3>
-                            </div>
-                        </div>
-                        <button onclick="requestPasscodeProtection(() => openAddTournamentTeamModal(${idx}))" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-bold">編集</button>
-                    </div>
-                    <div>
-                        <span class="text-[10px] text-slate-400 font-bold block mb-1">所属メンバー (${(tm.members||[]).length}名):</span>
-                        <div class="flex flex-wrap gap-1">${memberBadges || '<span class="text-xs text-slate-400">未設定</span>'}</div>
-                    </div>
-                `;
-                grid.appendChild(card);
-            });
-        }
-
-        function openSettingsModal() {
-            document.getElementById('settings-gas-url').value = state.gasUrl || '';
-            document.getElementById('modal-settings-view').classList.remove('hidden');
-        }
-
-        function closeSettingsModal() {
-            document.getElementById('modal-settings-view').classList.add('hidden');
-        }
-
-        function showRuleModalFromSettings() {
-            closeSettingsModal();
-            showRuleModal();
-        }
-
-        function saveSettingsForm() {
-            state.gasUrl = document.getElementById('settings-gas-url').value.trim();
-            saveStateToStorage();
-            closeSettingsModal();
-            renderNewsView();
-            showToast('設定を保存しました');
-        }
-
-        function requestPasscodeProtection(cb) {
-            state.pendingCallback = cb;
-            document.getElementById('passcode-input-field').value = '';
-            document.getElementById('passcode-error-msg').classList.add('hidden');
-            document.getElementById('modal-passcode-protection').classList.remove('hidden');
-        }
-
-        function closePasscodeModal() {
-            document.getElementById('modal-passcode-protection').classList.add('hidden');
-            state.pendingCallback = null;
-        }
-
-        function verifyPasscodeSubmit() {
-            const input = document.getElementById('passcode-input-field').value;
-            const errEl = document.getElementById('passcode-error-msg');
-            if (input === state.passcode) {
-                if (errEl) errEl.classList.add('hidden');
-                state.isAdminUnlocked = true;
-                const cb = state.pendingCallback;
-                closePasscodeModal();
-                if (cb) cb();
-                renderPlayersView();
-            } else {
-                if (errEl) errEl.classList.remove('hidden');
-            }
-        }
-
-        function showRuleModal() {
-            const t = state.tournaments.find(item => item.id === state.activeTournamentId);
-            const rule = state.rules.find(r => r.id === (t ? t.ruleId : 'rule-dnt-1')) || state.rules[0];
-
-            document.getElementById('modal-rule-title').innerText = `📜 ${rule.name}`;
-            const container = document.getElementById('modal-rule-content-table');
-            
-            let tableHtml = `<table class="w-full border-collapse border border-slate-300 dark:border-slate-700">
-                <thead>
-                    <tr class="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
-                        <th class="border border-slate-300 dark:border-slate-700 p-2 text-left w-32">項目</th>
-                        <th class="border border-slate-300 dark:border-slate-700 p-2 text-left">内容</th>
-                    </tr>
-                </thead>
-                <tbody>`;
-
-            (rule.table || []).forEach(row => {
-                tableHtml += `
-                    <tr class="border-b border-slate-200 dark:border-slate-800">
-                        <td class="border border-slate-300 dark:border-slate-700 p-2 font-bold bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 whitespace-nowrap">${row.item}</td>
-                        <td class="border border-slate-300 dark:border-slate-700 p-2 text-slate-700 dark:text-slate-300 whitespace-pre-wrap">${row.content}</td>
-                    </tr>
-                `;
-            });
-
-            tableHtml += `</tbody></table>`;
-            container.innerHTML = tableHtml;
-
-            document.getElementById('modal-rule-view').classList.remove('hidden');
-        }
-
-        function closeRuleModal() {
-            document.getElementById('modal-rule-view').classList.add('hidden');
-        }
-
-        function addCourtInputField(val = '') {
-            const container = document.getElementById('tour-form-courts-container');
-            if (!container) return;
-            const courtIdx = container.children.length + 1;
-            const div = document.createElement('div');
-            div.className = "flex items-center gap-2";
-            div.innerHTML = `
-                <input type="text" value="${val}" placeholder="例: ${courtIdx}コート" class="court-input-item flex-1 border dark:border-slate-700 rounded-xl p-2 bg-slate-50 dark:bg-slate-800 text-xs font-semibold">
-                <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700 text-xs font-bold px-2 py-1">✕</button>
-            `;
-            container.appendChild(div);
-        }
-
-        function renderCourtInputFields(courtsArray = ['Aコート', 'Bコート']) {
-            const container = document.getElementById('tour-form-courts-container');
-            if (!container) return;
-            container.innerHTML = '';
-            if (!courtsArray || courtsArray.length === 0) {
-                addCourtInputField('Aコート');
-                addCourtInputField('Bコート');
-            } else {
-                courtsArray.forEach(c => addCourtInputField(c));
-            }
-        }
-
-        function getCourtInputValues() {
-            const inputs = document.querySelectorAll('.court-input-item');
-            const res = [];
-            inputs.forEach(inp => {
-                const val = inp.value.trim();
-                if (val) res.push(val);
-            });
-            return res.length > 0 ? res : ['Aコート'];
-        }
-
-        function openCreateTournamentModal() {
-            state.editingTournamentId = null;
-            document.getElementById('modal-tournament-title').innerText = '試合作成';
-            document.getElementById('tour-form-category').value = '大会';
-            document.getElementById('tour-form-format').value = 'リーグ形式';
-            document.getElementById('tour-form-name').value = '1011DNTリーグ👑';
-            document.getElementById('tour-form-location').value = '沖縄県総合運動公園体育館';
-            renderCourtInputFields(['Aコート', 'Bコート']);
-            document.getElementById('modal-tournament-form').classList.remove('hidden');
-        }
-
-        function openEditTournamentModal() {
-            const t = state.tournaments.find(item => item.id === state.activeTournamentId);
-            if (!t) return;
-
-            state.editingTournamentId = t.id;
-            document.getElementById('modal-tournament-title').innerText = '大会情報編集';
-            document.getElementById('tour-form-category').value = t.category || '大会';
-            document.getElementById('tour-form-format').value = t.format || 'リーグ形式';
-            document.getElementById('tour-form-name').value = t.name || '';
-            document.getElementById('tour-form-location').value = t.location || '';
-            document.getElementById('tour-form-date').value = t.date || '';
-            document.getElementById('tour-form-timestart').value = t.timeStart || '';
-            document.getElementById('tour-form-timeend').value = t.timeEnd || '';
-            document.getElementById('tour-form-rule').value = t.ruleId || '';
-            renderCourtInputFields(t.courts || ['Aコート', 'Bコート']);
-            document.getElementById('tour-form-tags').value = (t.tags || []).join(', ');
-
-            document.getElementById('modal-tournament-form').classList.remove('hidden');
-        }
-
-        function closeTournamentModal() {
-            document.getElementById('modal-tournament-form').classList.add('hidden');
-        }
-
-        function copyPreviousTournamentData() {
-            if (state.tournaments.length === 0) {
-                showToast('前回の大会データが存在しません');
-                return;
-            }
-            const last = state.tournaments[state.tournaments.length - 1];
-            document.getElementById('tour-form-category').value = last.category || '大会';
-            document.getElementById('tour-form-format').value = last.format || 'リーグ形式';
-            document.getElementById('tour-form-name').value = last.name || '';
-            document.getElementById('tour-form-location').value = last.location || '';
-            renderCourtInputFields(last.courts || ['Aコート', 'Bコート']);
-            document.getElementById('tour-form-tags').value = (last.tags || []).join(', ');
-            showToast('前回の設定を複製しました');
-        }
-
-        function resetTournamentMatches() {
-            openConfirmModal(
-                '対戦表リセットの確認',
-                '現在登録されている対戦表とスコアデータをすべてクリアしますか？この操作は取り消せません。',
-                () => {
-                    const t = state.tournaments.find(item => item.id === (state.editingTournamentId || state.activeTournamentId));
-                    if (t) {
-                        t.matches = [];
-                        saveStateToStorage();
-                        closeTournamentModal();
-                        renderMatchesGrouped();
-                        recalculateDetailRanking();
-                        showToast('対戦表をリセットしました');
-                    }
-                }
-            );
         }
 
         function saveTournamentForm() {
@@ -3410,6 +2305,19 @@
             document.getElementById('modal-player-form').classList.remove('hidden');
         }
 
+        function checkDuplicatePlayerName(val) {
+            const warn = document.getElementById('player-duplicate-warning');
+            if (!warn) return;
+            const trimmed = (val || '').trim();
+            if (!trimmed) {
+                warn.classList.add('hidden');
+                return;
+            }
+            const exists = state.players.some(p => p.name === trimmed && p.id !== state.editingPlayerId);
+            if (exists) warn.classList.remove('hidden');
+            else warn.classList.add('hidden');
+        }
+
         function closePlayerModal() {
             document.getElementById('modal-player-form').classList.add('hidden');
         }
@@ -3469,6 +2377,1178 @@
             closePlayerModal();
             renderPlayersView();
             showToast('選手情報を保存しました');
+        }
+
+        function openPlayerDetailModal(playerId) {
+            const p = state.players.find(item => item.id === playerId);
+            if (!p) return;
+
+            document.getElementById('player-detail-name').innerText = p.name;
+            document.getElementById('player-detail-id').innerText = `ID: ${p.id}`;
+            document.getElementById('player-detail-number-badge').innerText = `#${p.number || ' - '}`;
+
+            let totalPts = 0;
+            let matchCount = 0;
+            const historyList = [];
+
+            state.tournaments.forEach(tour => {
+                (tour.matches || []).forEach(m => {
+                    if (!m.isFinished) return;
+                    
+                    const teamAObj = tour.teams.find(t => t.name === m.teamA);
+                    const teamBObj = tour.teams.find(t => t.name === m.teamB);
+
+                    let playerTeam = null;
+                    let oppTeam = null;
+                    let playerTeamScore = 0;
+                    let oppTeamScore = 0;
+                    let memberCount = 1;
+
+                    if (teamAObj && teamAObj.members && teamAObj.members.includes(p.name)) {
+                        playerTeam = m.teamA;
+                        oppTeam = m.teamB;
+                        playerTeamScore = m.scoreA || 0;
+                        oppTeamScore = m.scoreB || 0;
+                        memberCount = teamAObj.members.filter(mb => !GUEST_PLAYERS.includes(mb)).length || 1;
+                    } else if (teamBObj && teamBObj.members && teamBObj.members.includes(p.name)) {
+                        playerTeam = m.teamB;
+                        oppTeam = m.teamA;
+                        playerTeamScore = m.scoreB || 0;
+                        oppTeamScore = m.scoreA || 0;
+                        memberCount = teamBObj.members.filter(mb => !GUEST_PLAYERS.includes(mb)).length || 1;
+                    }
+
+                    if (playerTeam) {
+                        const estimatedPts = Math.round(playerTeamScore / memberCount);
+                        totalPts += estimatedPts;
+                        matchCount++;
+
+                        const winState = playerTeamScore > oppTeamScore ? 'WIN' : playerTeamScore < oppTeamScore ? 'LOSE' : 'DRAW';
+
+                        historyList.push({
+                            date: tour.date || '日付未設定',
+                            tourName: tour.name,
+                            myTeam: playerTeam,
+                            oppTeam: oppTeam,
+                            score: `${playerTeamScore} - ${oppTeamScore}`,
+                            pts: estimatedPts,
+                            winState: winState
+                        });
+                    }
+                });
+            });
+
+            const avgPts = matchCount > 0 ? (totalPts / matchCount).toFixed(1) : '0.0';
+
+            document.getElementById('player-detail-total-pts').innerText = `${totalPts} PTS`;
+            document.getElementById('player-detail-avg-pts').innerText = avgPts;
+            document.getElementById('player-detail-matches-count').innerText = `${matchCount} 試合`;
+
+            const now = new Date();
+            const lastDate = p.lastDate ? new Date(p.lastDate) : new Date(0);
+            const diffDays = (now - lastDate) / (1000 * 3600 * 24);
+            const isActive = diffDays <= 90;
+
+            const statusBadgeEl = document.getElementById('player-detail-status-badge');
+            if (statusBadgeEl) {
+                statusBadgeEl.innerHTML = isActive 
+                    ? `<span class="text-xs bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold px-2 py-0.5 rounded-full">🟢 アクティブ</span>`
+                    : `<span class="text-xs bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-400 font-bold px-2 py-0.5 rounded-full">⚪ 非アクティブ</span>`;
+            }
+
+            const posText = (p.positions || []).length > 0 ? p.positions.join(', ') : '未設定';
+            document.getElementById('player-detail-gender-pos').innerText = `${p.gender || '男'} / ${posText}`;
+
+            const ageVal = p.birth ? `${calculateAge(p.birth)}歳` : '未設定';
+            const heightVal = p.height ? `${p.height}cm` : '未設定';
+            const expVal = p.exp ? `${p.exp}年` : '未設定';
+            document.getElementById('player-detail-body-info').innerText = `${ageVal} / ${heightVal} / ${expVal}`;
+
+            const historyContainer = document.getElementById('player-match-history-container');
+            const historyTag = document.getElementById('player-history-count-tag');
+            if (historyTag) historyTag.innerText = `${historyList.length} 件`;
+
+            if (historyList.length === 0) {
+                historyContainer.innerHTML = `<p class="text-slate-400 py-3 text-center text-xs font-semibold">過去の確定試合ログはありません</p>`;
+            } else {
+                historyContainer.innerHTML = historyList.map(h => {
+                    const resultBadge = h.winState === 'WIN' 
+                        ? `<span class="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold px-1.5 py-0.5 rounded text-[10px]">勝</span>`
+                        : h.winState === 'LOSE'
+                            ? `<span class="bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 font-bold px-1.5 py-0.5 rounded text-[10px]">負</span>`
+                            : `<span class="bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 font-bold px-1.5 py-0.5 rounded text-[10px]">分</span>`;
+
+                    return `
+                        <div class="bg-slate-50 dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs">
+                            <div>
+                                <div class="flex items-center gap-1.5 mb-0.5">
+                                    <span class="text-[10px] text-slate-400 font-mono">${h.date}</span>
+                                    <span class="font-extrabold text-slate-800 dark:text-slate-200">${h.tourName}</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    ${resultBadge}
+                                    <span class="font-semibold text-slate-700 dark:text-slate-300">${h.myTeam} VS ${h.oppTeam}</span>
+                                    <span class="font-mono font-bold text-slate-500">(${h.score})</span>
+                                </div>
+                            </div>
+                            <div class="text-right font-mono shrink-0">
+                                <span class="font-black text-orange-600 dark:text-orange-400 text-sm">+${h.pts}</span>
+                                <span class="text-[9px] text-slate-400 block">獲得PTS</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            document.getElementById('modal-player-detail').classList.remove('hidden');
+        }
+
+        function closePlayerDetailModal() {
+            document.getElementById('modal-player-detail').classList.add('hidden');
+        }
+
+        function requestPasscodeProtection(cb) {
+            state.pendingCallback = cb;
+            document.getElementById('passcode-input-field').value = '';
+            document.getElementById('passcode-error-msg').classList.add('hidden');
+            document.getElementById('modal-passcode-protection').classList.remove('hidden');
+        }
+
+        function closePasscodeModal() {
+            document.getElementById('modal-passcode-protection').classList.add('hidden');
+            document.getElementById('passcode-error-msg').classList.add('hidden');
+            state.pendingCallback = null;
+        }
+
+        function verifyPasscodeSubmit() {
+            const input = document.getElementById('passcode-input-field').value;
+            const errorMsg = document.getElementById('passcode-error-msg');
+
+            if (input === state.passcode) {
+                state.isAdminUnlocked = true;
+                if (errorMsg) errorMsg.classList.add('hidden');
+                const cb = state.pendingCallback;
+                closePasscodeModal();
+                if (cb) cb();
+                renderPlayersView();
+            } else {
+                if (errorMsg) errorMsg.classList.remove('hidden');
+            }
+        }
+
+        function showRuleModal() {
+            const t = state.tournaments.find(item => item.id === state.activeTournamentId);
+            const rule = state.rules.find(r => r.id === (t ? t.ruleId : 'rule-dnt-1')) || state.rules[0];
+
+            document.getElementById('modal-rule-title').innerText = `📜 ${rule.name}`;
+            const container = document.getElementById('modal-rule-content-table');
+            
+            let tableHtml = `<table class="w-full border-collapse border border-slate-300 dark:border-slate-700">
+                <thead>
+                    <tr class="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+                        <th class="border border-slate-300 dark:border-slate-700 p-2 text-left w-32">項目</th>
+                        <th class="border border-slate-300 dark:border-slate-700 p-2 text-left">内容</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            (rule.table || []).forEach(row => {
+                tableHtml += `
+                    <tr class="border-b border-slate-200 dark:border-slate-800">
+                        <td class="border border-slate-300 dark:border-slate-700 p-2 font-bold bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 whitespace-nowrap">${row.item}</td>
+                        <td class="border border-slate-300 dark:border-slate-700 p-2 text-slate-700 dark:text-slate-300 whitespace-pre-wrap">${row.content}</td>
+                    </tr>
+                `;
+            });
+
+            tableHtml += `</tbody></table>`;
+            container.innerHTML = tableHtml;
+
+            document.getElementById('modal-rule-view').classList.remove('hidden');
+        }
+
+        function closeRuleModal() {
+            document.getElementById('modal-rule-view').classList.add('hidden');
+        }
+
+        function openMatrixModal() {
+            const t = state.tournaments.find(item => item.id === state.activeTournamentId);
+            if (!t) return;
+            normalizeTournamentTeams(t);
+
+            const teams = (t.teams || []).map(tm => typeof tm === 'string' ? tm : tm.name);
+            const matches = t.matches || [];
+
+            const table = document.getElementById('matrix-table');
+            if (!table) return;
+            table.innerHTML = '';
+
+            let headerRow = `<tr class="bg-slate-100 dark:bg-slate-800 font-bold text-slate-700 dark:text-slate-200"><th class="p-2 border border-slate-300 dark:border-slate-700">チーム</th>`;
+            teams.forEach(tm => {
+                headerRow += `<th class="p-2 border border-slate-300 dark:border-slate-700">${tm}</th>`;
+            });
+            headerRow += `</tr>`;
+            table.innerHTML += headerRow;
+
+            teams.forEach(tA => {
+                let row = `<tr><td class="p-2 font-bold bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-left text-slate-900 dark:text-white">${tA}</td>`;
+                teams.forEach(tB => {
+                    if (tA === tB) {
+                        row += `<td class="p-2 bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 font-mono text-slate-400">ー</td>`;
+                    } else {
+                        const match = matches.find(m => (m.teamA === tA && m.teamB === tB) || (m.teamA === tB && m.teamB === tA));
+                        if (match) {
+                            const isAFirst = match.teamA === tA;
+                            const scoreSelf = isAFirst ? match.scoreA : match.scoreB;
+                            const scoreOpp = isAFirst ? match.scoreB : match.scoreA;
+                            if (match.isFinished || (match.scoreA > 0 || match.scoreB > 0)) {
+                                const resultColor = scoreSelf > scoreOpp ? 'text-emerald-600 font-bold' : scoreSelf < scoreOpp ? 'text-red-500 font-bold' : 'text-slate-600 dark:text-slate-300';
+                                row += `<td class="p-2 border border-slate-300 dark:border-slate-700 font-mono ${resultColor}">${scoreSelf} - ${scoreOpp}</td>`;
+                            } else {
+                                row += `<td class="p-2 border border-slate-300 dark:border-slate-700 text-slate-400 font-mono">未対戦</td>`;
+                            }
+                        } else {
+                            row += `<td class="p-2 border border-slate-300 dark:border-slate-700 text-slate-400 font-mono">-</td>`;
+                        }
+                    }
+                });
+                row += `</tr>`;
+                table.innerHTML += row;
+            });
+
+            document.getElementById('modal-matrix-view').classList.remove('hidden');
+        }
+
+        function closeMatrixModal() {
+            document.getElementById('modal-matrix-view').classList.add('hidden');
+        }
+
+        function exportMatrixPNG() {
+            const area = document.getElementById('printable-matrix-area');
+            if (!area) return;
+
+            const originalOverflow = area.style.overflow;
+            const originalWidth = area.style.width;
+            area.style.overflow = 'visible';
+            area.style.width = area.scrollWidth + 'px';
+
+            html2canvas(area, {
+                scrollX: 0,
+                scrollY: 0,
+                width: area.scrollWidth,
+                windowWidth: area.scrollWidth + 100
+            }).then(canvas => {
+                area.style.overflow = originalOverflow;
+                area.style.width = originalWidth;
+
+                const link = document.createElement('a');
+                link.download = '対戦マトリックス_' + new Date().toISOString().split('T')[0] + '.png';
+                link.href = canvas.toDataURL();
+                link.click();
+                showToast('対戦マトリックス画像を保存しました');
+            }).catch(err => {
+                area.style.overflow = originalOverflow;
+                area.style.width = originalWidth;
+                showToast('画像保存に失敗しました');
+            });
+        }
+
+        function exportMatrixPDF() {
+            const area = document.getElementById('printable-matrix-area');
+            if (!area) return;
+
+            const originalOverflow = area.style.overflow;
+            const originalWidth = area.style.width;
+            area.style.overflow = 'visible';
+            area.style.width = area.scrollWidth + 'px';
+
+            html2canvas(area, {
+                scrollX: 0,
+                scrollY: 0,
+                width: area.scrollWidth,
+                windowWidth: area.scrollWidth + 100
+            }).then(canvas => {
+                area.style.overflow = originalOverflow;
+                area.style.width = originalWidth;
+
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('l', 'mm', 'a4');
+                const imgProps = pdf.getImageProperties(imgData);
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                pdf.addImage(imgData, 'PNG', 0, 10, pdfWidth, pdfHeight);
+                pdf.save('対戦マトリックス_' + new Date().toISOString().split('T')[0] + '.pdf');
+                showToast('対戦マトリックスPDFを出力しました');
+            }).catch(err => {
+                area.style.overflow = originalOverflow;
+                area.style.width = originalWidth;
+                showToast('PDF出力に失敗しました');
+            });
+        }
+
+        function printMatrix() {
+            window.print();
+        }
+
+        function generateMatchSchedule() {
+            const t = state.tournaments.find(item => item.id === state.activeTournamentId);
+            if (!t) return;
+            normalizeTournamentTeams(t);
+
+            const teams = (t.teams || []).map(tm => typeof tm === 'string' ? tm : tm.name);
+            if (teams.length < 2) {
+                showToast('対戦表を作成するには2チーム以上登録してください');
+                return;
+            }
+
+            if (!t.matches) t.matches = [];
+            const newMatches = [];
+            const courts = (t.courts && t.courts.length > 0) ? t.courts : ['Aコート'];
+
+            let currentHour = 9;
+            let currentMinute = 0;
+            let courtIdx = 0;
+
+            function getNextTimeString() {
+                const hStr = String(currentHour).padStart(2, '0');
+                const mStr = String(currentMinute).padStart(2, '0');
+                return `${hStr}:${mStr}`;
+            }
+
+            function advanceTime() {
+                courtIdx++;
+                if (courtIdx % courts.length === 0) {
+                    currentMinute += 25;
+                    if (currentMinute >= 60) {
+                        currentHour += Math.floor(currentMinute / 60);
+                        currentMinute = currentMinute % 60;
+                    }
+                }
+            }
+
+            const formatName = t.format || 'リーグ形式';
+            if (formatName === 'リーグ形式' || formatName === 'リーグ戦') {
+                for (let i = 0; i < teams.length; i++) {
+                    for (let j = i + 1; j < teams.length; j++) {
+                        const timeStr = getNextTimeString();
+                        const playingTeams = [teams[i], teams[j]];
+                        const restingTeams = teams.filter(tm => !playingTeams.includes(tm));
+                        const refTeam = restingTeams.length > 0 ? restingTeams[newMatches.length % restingTeams.length] : '運営';
+
+                        newMatches.push({
+                            id: 'm-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+                            time: timeStr,
+                            court: courts[courtIdx % courts.length],
+                            teamA: teams[i],
+                            scoreA_1h: 0, scoreA_2h: 0, scoreA_1on1: 0,
+                            scoreB_1h: 0, scoreB_2h: 0, scoreB_1on1: 0,
+                            scoreA: 0, scoreB: 0,
+                            teamB: teams[j],
+                            refereeTeam: refTeam,
+                            isFinished: false
+                        });
+                        advanceTime();
+                    }
+                }
+            } else {
+                for (let i = 0; i < teams.length; i += 2) {
+                    if (teams[i + 1]) {
+                        const timeStr = getNextTimeString();
+                        const playingTeams = [teams[i], teams[i + 1]];
+                        const restingTeams = teams.filter(tm => !playingTeams.includes(tm));
+                        const refTeam = restingTeams.length > 0 ? restingTeams[newMatches.length % restingTeams.length] : '運営';
+
+                        newMatches.push({
+                            id: 'm-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+                            time: timeStr,
+                            court: courts[courtIdx % courts.length],
+                            teamA: teams[i],
+                            scoreA_1h: 0, scoreA_2h: 0, scoreA_1on1: 0,
+                            scoreB_1h: 0, scoreB_2h: 0, scoreB_1on1: 0,
+                            scoreA: 0, scoreB: 0,
+                            teamB: teams[i + 1],
+                            refereeTeam: refTeam,
+                            isFinished: false
+                        });
+                        advanceTime();
+                    }
+                }
+            }
+
+            t.matches = newMatches;
+            saveStateToStorage();
+            renderMatchesGrouped();
+            recalculateDetailRanking();
+            renderRankingsView();
+            showToast('対戦表を自動生成しました');
+        }
+
+        function addMatchRow() {
+            const t = state.tournaments.find(item => item.id === state.activeTournamentId);
+            if (!t) return;
+            normalizeTournamentTeams(t);
+
+            const teams = (t.teams || []).map(tm => typeof tm === 'string' ? tm : tm.name);
+            const courts = (t.courts && t.courts.length > 0) ? t.courts : ['Aコート'];
+
+            if (!t.matches) t.matches = [];
+            t.matches.push({
+                id: 'm-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+                time: '09:00',
+                court: courts[0],
+                teamA: teams[0] || 'チームA',
+                scoreA_1h: 0, scoreA_2h: 0, scoreA_1on1: 0,
+                scoreB_1h: 0, scoreB_2h: 0, scoreB_1on1: 0,
+                scoreA: 0, scoreB: 0,
+                teamB: teams[1] || 'チームB',
+                refereeTeam: teams[2] || '休みチーム',
+                isFinished: false
+            });
+
+            saveStateToStorage();
+            renderMatchesGrouped();
+            recalculateDetailRanking();
+            showToast('試合カードを手動追加しました');
+        }
+
+        function toggleGlobalSecondaryMatchesCollapse() {
+            state.globalSecondaryCollapsed = !state.globalSecondaryCollapsed;
+            const btn = document.getElementById('secondary-matches-toggle-btn');
+            if (btn) {
+                if (state.globalSecondaryCollapsed) {
+                    btn.innerHTML = `<i class="fa-solid fa-eye"></i> 全試合を表示 (最大化)`;
+                } else {
+                    btn.innerHTML = `<i class="fa-solid fa-eye-slash"></i> 全試合を非表示 (最小化)`;
+                }
+            }
+            renderMatchesGrouped();
+        }
+
+        function changeScore(matchId, team, delta) {
+            const t = state.tournaments.find(item => item.id === state.activeTournamentId);
+            if (!t || !t.matches) return;
+            const m = t.matches.find(item => item.id === matchId);
+            if (!m || m.isFinished) return;
+
+            if (t.category === '大会') {
+                const field = team === 'A' ? 'scoreA_1h' : 'scoreB_1h';
+                m[field] = Math.max(0, (m[field] || 0) + delta);
+                m.scoreA = (m.scoreA_1h || 0) + (m.scoreA_2h || 0) + (m.scoreA_1on1 || 0);
+                m.scoreB = (m.scoreB_1h || 0) + (m.scoreB_2h || 0) + (m.scoreB_1on1 || 0);
+            } else {
+                const field = team === 'A' ? 'scoreA' : 'scoreB';
+                m[field] = Math.max(0, (m[field] || 0) + delta);
+            }
+
+            saveStateToStorage();
+            renderMatchesGrouped();
+            recalculateDetailRanking();
+            renderRankingsView();
+        }
+
+        function updateMatchField(matchId, field, value) {
+            const t = state.tournaments.find(item => item.id === state.activeTournamentId);
+            if (!t || !t.matches) return;
+            const m = t.matches.find(item => item.id === matchId);
+            if (!m) return;
+
+            m[field] = value;
+            saveStateToStorage();
+            recalculateDetailRanking();
+            renderRankingsView();
+        }
+
+        function toggleMatchLock(matchId, finishState) {
+            const t = state.tournaments.find(item => item.id === state.activeTournamentId);
+            if (!t || !t.matches) return;
+            const m = t.matches.find(item => item.id === matchId);
+            if (!m) return;
+
+            m.isFinished = finishState;
+            saveStateToStorage();
+            renderMatchesGrouped();
+            recalculateDetailRanking();
+            renderRankingsView();
+            renderPlayersView();
+            showToast(finishState ? '試合を完了（確定・ランキングへ反映）しました' : '試合のロックを解除しました');
+        }
+
+        function toggleEditMatchTeams(matchId) {
+            const t = state.tournaments.find(item => item.id === state.activeTournamentId);
+            if (t && t.matches) {
+                const m = t.matches.find(item => item.id === matchId);
+                if (m) {
+                    m._editingTeams = !m._editingTeams;
+                    renderMatchesGrouped();
+                }
+            }
+        }
+
+        function renderMatchesGrouped() {
+            const container = document.getElementById('matches-time-grouped-container');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const t = state.tournaments.find(item => item.id === state.activeTournamentId);
+            if (!t) return;
+            normalizeTournamentTeams(t);
+
+            const matches = t.matches || [];
+
+            if (matches.length === 0) {
+                container.innerHTML = `
+                    <div class="py-8 text-center space-y-3">
+                        <p class="text-xs text-slate-400">対戦カードがありません。</p>
+                        <div class="flex justify-center gap-2">
+                            <button onclick="addMatchRow()" class="bg-orange-600 text-white text-xs px-3.5 py-2 rounded-xl font-semibold shadow">＋ 手動で追加</button>
+                            <button onclick="triggerMatchScheduleGeneration()" class="bg-indigo-600 text-white text-xs px-3.5 py-2 rounded-xl font-semibold shadow">⚔️ 対戦表を自動作成 (${t.format || 'リーグ形式'})</button>
+                        </div>
+                    </div>`;
+                return;
+            }
+
+            const teamNameList = (t.teams || []).map(tm => typeof tm === 'string' ? tm : tm.name);
+
+            const sortedMatches = [...matches].sort((a, b) => {
+                if (a.isFinished !== b.isFinished) return a.isFinished ? 1 : -1;
+                return (a.time || '00:00').localeCompare(b.time || '00:00');
+            });
+
+            const timeMap = {};
+            sortedMatches.forEach(m => {
+                const timeKey = m.time || '09:00';
+                if (!timeMap[timeKey]) timeMap[timeKey] = [];
+                timeMap[timeKey].push(m);
+            });
+
+            const timeKeys = Object.keys(timeMap).sort();
+
+            timeKeys.forEach((timeKey, timeIdx) => {
+                const matchesAtTime = timeMap[timeKey];
+                const gameNum = timeIdx + 1;
+
+                if (state.globalSecondaryCollapsed && timeIdx >= 1) {
+                    return;
+                }
+
+                const block = document.createElement('div');
+                block.className = 'bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-xl p-3.5 space-y-3';
+
+                let cardsHtml = matchesAtTime.map(m => {
+                    const teamOptions = teamNameList.map(tm => `<option value="${tm}" ${tm === m.teamA ? 'selected' : ''}>${tm}</option>`).join('');
+                    const teamBOptions = teamNameList.map(tm => `<option value="${tm}" ${tm === m.teamB ? 'selected' : ''}>${tm}</option>`).join('');
+
+                    const isFinished = !!m.isFinished;
+                    const disabledAttr = isFinished ? 'disabled' : '';
+                    const isTeamsEditing = !!m._editingTeams;
+
+                    const cardBg = isFinished 
+                        ? 'bg-slate-100 dark:bg-slate-900 border-slate-300 dark:border-slate-800 opacity-75' 
+                        : 'bg-white dark:bg-slate-900 border-orange-300 dark:border-orange-600 shadow-md';
+
+                    const statusBadge = isFinished 
+                        ? '<span class="bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[9.5px] font-bold px-2 py-0.5 rounded-full">🔒 確定済み</span>'
+                        : '<span class="bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-400 text-[9.5px] font-bold px-2 py-0.5 rounded-full animate-pulse">🟢 試合中</span>';
+
+                    const teamDropdownDisabled = (!isTeamsEditing || isFinished) ? 'disabled' : '';
+
+                    return `
+                        <div class="border rounded-xl p-3.5 shadow-sm space-y-3 transition-all ${cardBg}">
+                            <div class="flex justify-between items-center text-xs border-b border-slate-200/80 dark:border-slate-800 pb-1.5">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold text-orange-600 dark:text-orange-400 font-mono">${m.court || 'コート未定'}</span>
+                                    ${statusBadge}
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
+                                        📣 審判: ${m.refereeTeam || '休みチーム'}
+                                    </span>
+                                    <button onclick="toggleEditMatchTeams('${m.id}')" class="text-indigo-600 dark:text-indigo-400 hover:underline font-bold text-[11px] flex items-center gap-0.5">
+                                        <i class="fa-solid fa-pen-to-square"></i> ${isTeamsEditing ? '完了' : '試合編集'}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-12 items-center gap-1 sm:gap-2">
+                                <div class="col-span-4 space-y-1 text-center">
+                                    <select ${teamDropdownDisabled} onchange="updateMatchField('${m.id}', 'teamA', this.value)" class="w-full text-xs font-bold text-slate-800 dark:text-white ${teamDropdownDisabled ? 'bg-slate-100 dark:bg-slate-800' : 'bg-white dark:bg-slate-900 border-indigo-400'} border dark:border-slate-700 rounded-lg p-1.5 text-center">
+                                        <option value="">チームを選択</option>
+                                        ${teamOptions}
+                                    </select>
+                                    <div class="flex justify-center gap-1 pt-1">
+                                        <button onclick="changeScore('${m.id}', 'A', 1)" ${disabledAttr} class="w-8 h-7 bg-orange-600 hover:bg-orange-700 active:scale-95 text-white font-black text-sm rounded-lg shadow-xs flex items-center justify-center transition-all">＋</button>
+                                        <button onclick="changeScore('${m.id}', 'A', -1)" ${disabledAttr} class="w-8 h-7 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 active:scale-95 text-slate-800 dark:text-slate-200 font-black text-sm rounded-lg shadow-xs flex items-center justify-center transition-all">ー</button>
+                                    </div>
+                                </div>
+
+                                <div class="col-span-4 flex flex-col items-center justify-center">
+                                    <div class="flex items-center gap-1">
+                                        <span class="w-12 text-center text-2xl font-black font-mono text-slate-900 dark:text-white">${m.scoreA || 0}</span>
+                                        <span class="font-bold text-slate-400 text-sm">-</span>
+                                        <span class="w-12 text-center text-2xl font-black font-mono text-slate-900 dark:text-white">${m.scoreB || 0}</span>
+                                    </div>
+                                </div>
+
+                                <div class="col-span-4 space-y-1 text-center">
+                                    <select ${teamDropdownDisabled} onchange="updateMatchField('${m.id}', 'teamB', this.value)" class="w-full text-xs font-bold text-slate-800 dark:text-white ${teamDropdownDisabled ? 'bg-slate-100 dark:bg-slate-800' : 'bg-white dark:bg-slate-900 border-indigo-400'} border dark:border-slate-700 rounded-lg p-1.5 text-center">
+                                        <option value="">チームを選択</option>
+                                        ${teamBOptions}
+                                    </select>
+                                    <div class="flex justify-center gap-1 pt-1">
+                                        <button onclick="changeScore('${m.id}', 'B', 1)" ${disabledAttr} class="w-8 h-7 bg-orange-600 hover:bg-orange-700 active:scale-95 text-white font-black text-sm rounded-lg shadow-xs flex items-center justify-center transition-all">＋</button>
+                                        <button onclick="changeScore('${m.id}', 'B', -1)" ${disabledAttr} class="w-8 h-7 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 active:scale-95 text-slate-800 dark:text-slate-200 font-black text-sm rounded-lg shadow-xs flex items-center justify-center transition-all">ー</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            ${isTeamsEditing ? `
+                                <div class="pt-2 border-t dark:border-slate-800 flex justify-end">
+                                    <button onclick="deleteMatchRow('${m.id}')" class="text-rose-600 hover:text-rose-800 text-xs font-bold px-2 py-1 rounded bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900">
+                                        🗑️ この試合カードを削除
+                                    </button>
+                                </div>
+                            ` : ''}
+
+                            <div class="flex justify-end pt-1">
+                                ${isFinished 
+                                    ? `<button onclick="toggleMatchLock('${m.id}', false)" class="bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border border-amber-300 dark:border-amber-800 text-xs px-3 py-1 rounded-lg font-semibold flex items-center gap-1">✏️ 再編集 (ロック解除)</button>`
+                                    : `<button onclick="toggleMatchLock('${m.id}', true)" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1 rounded-lg font-semibold shadow flex items-center gap-1">🏁 試合終了 (確定)</button>`}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                block.innerHTML = `
+                    <div class="flex items-center justify-between border-b pb-1.5 dark:border-slate-700">
+                        <span class="text-xs font-black text-orange-600 dark:text-orange-400 font-mono bg-orange-50 dark:bg-orange-950/80 border border-orange-200 dark:border-orange-800 px-3 py-1 rounded-xl shadow-xs">
+                            🕒 GAME ${gameNum} - 開始時刻: ${timeKey}
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">${cardsHtml}</div>
+                `;
+                container.appendChild(block);
+            });
+        }
+
+        function recalculateDetailRanking() {
+            const tbody = document.getElementById('detail-ranking-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            const t = state.tournaments.find(item => item.id === state.activeTournamentId);
+            if (!t) return;
+            normalizeTournamentTeams(t);
+
+            const statsMap = {};
+            (t.teams || []).forEach(tm => {
+                const name = typeof tm === 'string' ? tm : tm.name;
+                const img = typeof tm === 'object' ? tm.image : null;
+                statsMap[name] = { name: name, image: img, played: 0, won: 0, lost: 0, ptsFor: 0, ptsAgainst: 0, diff: 0 };
+            });
+
+            (t.matches || []).forEach(m => {
+                if (!m.isFinished) return;
+                const tA = m.teamA;
+                const tB = m.teamB;
+                const sA = m.scoreA || 0;
+                const sB = m.scoreB || 0;
+
+                if (statsMap[tA]) {
+                    statsMap[tA].played++;
+                    statsMap[tA].ptsFor += sA;
+                    statsMap[tA].ptsAgainst += sB;
+                    if (sA > sB) statsMap[tA].won++;
+                    else if (sA < sB) statsMap[tA].lost++;
+                }
+
+                if (statsMap[tB]) {
+                    statsMap[tB].played++;
+                    statsMap[tB].ptsFor += sB;
+                    statsMap[tB].ptsAgainst += sA;
+                    if (sB > sA) statsMap[tB].won++;
+                    else if (sB < sA) statsMap[tB].lost++;
+                }
+            });
+
+            const standings = Object.values(statsMap).map(st => {
+                st.diff = st.ptsFor - st.ptsAgainst;
+                return st;
+            }).sort((a, b) => {
+                if (b.diff !== a.diff) return b.diff - a.diff;
+                if (b.ptsFor !== a.ptsFor) return b.ptsFor - a.ptsFor;
+                return b.won - a.won;
+            });
+
+            standings.forEach((st, idx) => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 dark:hover:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 font-semibold";
+
+                const rankDisplay = idx === 0 ? '🥇 1' : idx === 1 ? '🥈 2' : idx === 2 ? '🥉 3' : `${idx + 1}`;
+                const logoHtml = st.image 
+                    ? `<img src="${st.image}" class="w-6 h-6 rounded-full object-cover border inline-block mr-1.5">` 
+                    : `<span class="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 text-[10px] font-bold flex items-center justify-center inline-flex mr-1.5 text-slate-600 dark:text-slate-300">🛡️</span>`;
+
+                tr.innerHTML = `
+                    <td class="p-2.5 text-center font-bold text-slate-800 dark:text-slate-200">${rankDisplay}</td>
+                    <td class="p-2.5 text-left font-bold text-slate-900 dark:text-white flex items-center">${logoHtml}${st.name}</td>
+                    <td class="p-2.5 text-center font-mono font-extrabold bg-emerald-50/50 dark:bg-emerald-950/30 ${st.diff > 0 ? 'text-emerald-600 dark:text-emerald-400' : st.diff < 0 ? 'text-red-500 dark:text-red-400' : 'text-slate-500'}">${st.diff > 0 ? '+' + st.diff : st.diff}</td>
+                    <td class="p-2.5 text-center font-mono">${st.played}</td>
+                    <td class="p-2.5 text-center font-mono text-emerald-600 dark:text-emerald-400">${st.won}</td>
+                    <td class="p-2.5 text-center font-mono text-red-500 dark:text-red-400">${st.lost}</td>
+                    <td class="p-2.5 text-center font-mono">${st.ptsFor}</td>
+                    <td class="p-2.5 text-center font-mono text-slate-400 dark:text-slate-500">${st.ptsAgainst}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderPlayersView() {
+            const tbody = document.getElementById('players-table-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            const search = (document.getElementById('player-search-input')?.value || '').toLowerCase();
+            const sort = document.getElementById('player-sort-select')?.value || 'id';
+
+            const playerTotalScoreMap = {};
+            state.tournaments.forEach(tour => {
+                (tour.matches || []).forEach(m => {
+                    if (!m.isFinished) return;
+                    const teamAObj = tour.teams.find(t => t.name === m.teamA);
+                    const teamBObj = tour.teams.find(t => t.name === m.teamB);
+                    if (teamAObj && teamAObj.members) {
+                        const mCount = teamAObj.members.filter(mb => !GUEST_PLAYERS.includes(mb)).length || 1;
+                        teamAObj.members.forEach(mb => {
+                            playerTotalScoreMap[mb] = (playerTotalScoreMap[mb] || 0) + Math.round((m.scoreA || 0) / mCount);
+                        });
+                    }
+                    if (teamBObj && teamBObj.members) {
+                        const mCount = teamBObj.members.filter(mb => !GUEST_PLAYERS.includes(mb)).length || 1;
+                        teamBObj.members.forEach(mb => {
+                            playerTotalScoreMap[mb] = (playerTotalScoreMap[mb] || 0) + Math.round((m.scoreB || 0) / mCount);
+                        });
+                    }
+                });
+            });
+
+            let list = [...state.players].map(p => {
+                return { ...p, pts: playerTotalScoreMap[p.name] || 0 };
+            }).filter(p => {
+                return (p.name || '').toLowerCase().includes(search) || 
+                       (p.id || '').toLowerCase().includes(search) || 
+                       (p.number || '').toString().includes(search);
+            });
+
+            if (sort === 'pts') list.sort((a, b) => (b.pts || 0) - (a.pts || 0));
+            else if (sort === 'name') list.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ja'));
+            else list.sort((a, b) => (a.id || '').localeCompare(b.id || ''));
+
+            const posCount = { PG: 0, SG: 0, SF: 0, PF: 0, C: 0, 未設定: 0 };
+            let maleCount = 0;
+            let femaleCount = 0;
+
+            state.players.forEach(p => {
+                if (p.gender === '男') maleCount++;
+                if (p.gender === '女') femaleCount++;
+                if (!p.positions || p.positions.length === 0) {
+                    posCount.未設定++;
+                } else {
+                    p.positions.forEach(pos => {
+                        if (posCount[pos] !== undefined) posCount[pos]++;
+                    });
+                }
+            });
+
+            const posSummaryEl = document.getElementById('position-count-summary');
+            if (posSummaryEl) {
+                posSummaryEl.innerHTML = `
+                    <span class="text-orange-600 dark:text-orange-400 font-extrabold bg-orange-100 dark:bg-orange-950 px-2 py-0.5 rounded-lg">総数: ${state.players.length}名</span>
+                    <span class="bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 px-2 py-0.5 rounded-lg">男: ${maleCount}</span>
+                    <span class="bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300 px-2 py-0.5 rounded-lg">女: ${femaleCount}</span>
+                    <span class="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-lg">未設定: ${posCount.未設定}</span>
+                `;
+            }
+
+            list.forEach(p => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer";
+                tr.onclick = (e) => {
+                    if (e.target.closest('button')) return;
+                    openPlayerDetailModal(p.id);
+                };
+
+                const genderBadge = p.gender === '男' 
+                    ? `<span class="bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 font-bold px-2 py-0.5 rounded-full text-[10px]">男</span>`
+                    : `<span class="bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 font-bold px-2 py-0.5 rounded-full text-[10px]">女</span>`;
+
+                const posBadges = (p.positions || []).length > 0
+                    ? p.positions.map(pos => `<span class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold px-1.5 py-0.5 rounded text-[10px] mr-0.5">${pos}</span>`).join('')
+                    : `<span class="text-slate-400 font-normal">未設定</span>`;
+
+                const now = new Date();
+                const lastDate = p.lastDate ? new Date(p.lastDate) : new Date(0);
+                const diffDays = (now - lastDate) / (1000 * 3600 * 24);
+                const isActive = diffDays <= 90;
+
+                const statusBadge = isActive 
+                    ? `<span class="bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full">🟢 アクティブ</span>`
+                    : `<span class="bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-bold px-2 py-0.5 rounded-full">⚪ 非アクティブ</span>`;
+
+                const ageStr = p.birth ? `${calculateAge(p.birth)}歳` : '-';
+
+                tr.innerHTML = `
+                    <td class="p-2.5 font-mono text-left font-bold text-slate-700 dark:text-slate-300">${p.id}</td>
+                    <td class="p-2.5 text-center font-mono font-bold text-orange-600 dark:text-orange-400">#${p.number || '-'}</td>
+                    <td class="p-2.5 font-bold text-slate-900 dark:text-white">${p.name}</td>
+                    <td class="p-2.5 text-center">${genderBadge}</td>
+                    <td class="p-2.5 text-center">${posBadges}</td>
+                    <td class="p-2.5 text-center font-mono font-extrabold text-orange-600 dark:text-orange-400 bg-orange-50/50 dark:bg-orange-950/40 rounded-lg">${p.pts} PTS</td>
+                    <td class="p-2.5 text-center">${statusBadge}</td>
+                    <td class="p-2.5 text-center font-mono text-amber-800 dark:text-amber-400 admin-only-col ${state.isAdminUnlocked ? '' : 'hidden'}">${ageStr} / ${p.height ? p.height + 'cm' : '-'} / ${p.exp ? p.exp + '年' : '-'}</td>
+                    <td class="p-2.5 text-right space-x-1">
+                        <button onclick="requestPasscodeProtection(() => openAddPlayerModal('${p.id}'))" class="text-slate-500 hover:text-slate-800 dark:hover:text-white font-bold">編集</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderRankingsView() {
+            const grid = document.getElementById('rankings-cards-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            const playerStatsMap = {};
+            state.players.forEach(p => {
+                playerStatsMap[p.name] = { name: p.name, pts: 0, fg2m: 0, fg3m: 0, ftm: 0, reb: 0, ast: 0 };
+            });
+
+            state.tournaments.forEach(tour => {
+                if (state.rankingMatchType !== 'ALL' && tour.category !== state.rankingMatchType) return;
+
+                (tour.matches || []).forEach(m => {
+                    if (!m.isFinished) return;
+                    
+                    const teamAObj = tour.teams.find(t => t.name === m.teamA);
+                    const teamBObj = tour.teams.find(t => t.name === m.teamB);
+
+                    if (teamAObj && teamAObj.members) {
+                        const count = teamAObj.members.filter(mb => !GUEST_PLAYERS.includes(mb)).length || 1;
+                        teamAObj.members.forEach(mb => {
+                            if (playerStatsMap[mb]) {
+                                const ptsA = m.scoreA || 0;
+                                playerStatsMap[mb].pts += Math.round(ptsA / count);
+                                playerStatsMap[mb].fg2m += Math.round((ptsA * 0.5) / count);
+                                playerStatsMap[mb].fg3m += Math.round((ptsA * 0.3) / count);
+                                playerStatsMap[mb].ftm += Math.round((ptsA * 0.2) / count);
+                                playerStatsMap[mb].reb += Math.round((ptsA * 0.4) / count);
+                                playerStatsMap[mb].ast += Math.round((ptsA * 0.25) / count);
+                            }
+                        });
+                    }
+
+                    if (teamBObj && teamBObj.members) {
+                        const count = teamBObj.members.filter(mb => !GUEST_PLAYERS.includes(mb)).length || 1;
+                        teamBObj.members.forEach(mb => {
+                            if (playerStatsMap[mb]) {
+                                const ptsB = m.scoreB || 0;
+                                playerStatsMap[mb].pts += Math.round(ptsB / count);
+                                playerStatsMap[mb].fg2m += Math.round((ptsB * 0.5) / count);
+                                playerStatsMap[mb].fg3m += Math.round((ptsB * 0.3) / count);
+                                playerStatsMap[mb].ftm += Math.round((ptsB * 0.2) / count);
+                                playerStatsMap[mb].reb += Math.round((ptsB * 0.4) / count);
+                                playerStatsMap[mb].ast += Math.round((ptsB * 0.25) / count);
+                            }
+                        });
+                    }
+                });
+            });
+
+            const playersList = Object.values(playerStatsMap);
+
+            function buildCard(title, list, valueFn) {
+                const card = document.createElement('div');
+                card.className = "bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-2xl p-4 shadow-xs space-y-2.5";
+                
+                let rowsHtml = '';
+                list.slice(0, 5).forEach((item, idx) => {
+                    const badgeColor = idx === 0 ? 'bg-amber-400 text-white' : idx === 1 ? 'bg-slate-300 text-slate-800' : idx === 2 ? 'bg-amber-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300';
+                    
+                    rowsHtml += `
+                        <div class="flex items-center justify-between text-xs py-1.5 border-b border-slate-200/60 dark:border-slate-700/60 gap-2">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] shrink-0 ${badgeColor}">${idx + 1}</span>
+                                <span class="font-bold text-slate-800 dark:text-slate-200 truncate">${item.name}</span>
+                            </div>
+                            <span class="font-mono font-extrabold text-orange-600 dark:text-orange-400 text-xs shrink-0">${valueFn(item)}</span>
+                        </div>
+                    `;
+                });
+
+                card.innerHTML = `
+                    <h3 class="font-extrabold text-xs text-slate-900 dark:text-white border-b pb-2 dark:border-slate-700 flex items-center gap-1.5">${title}</h3>
+                    <div class="space-y-0.5">${rowsHtml || '<p class="text-xs text-slate-400 py-2">データなし</p>'}</div>
+                `;
+                return card;
+            }
+
+            const topPts = [...playersList].sort((a,b) => b.pts - a.pts);
+            const top2P  = [...playersList].sort((a,b) => b.fg2m - a.fg2m);
+            const top3P  = [...playersList].sort((a,b) => b.fg3m - a.fg3m);
+            const topFT  = [...playersList].sort((a,b) => b.ftm - a.ftm);
+            const topReb = [...playersList].sort((a,b) => b.reb - a.reb);
+            const topAst = [...playersList].sort((a,b) => b.ast - a.ast);
+
+            grid.appendChild(buildCard('🏀 得点王 (PTS)', topPts, p => p.pts + ' PTS'));
+            grid.appendChild(buildCard('🎯 2P スナイパー (2PM)', top2P, p => p.fg2m + ' 本'));
+            grid.appendChild(buildCard('⚡ 3P スナイパー (3PM)', top3P, p => p.fg3m + ' 本'));
+            grid.appendChild(buildCard('🎯 フリースロー王 (FTM)', topFT, p => p.ftm + ' 本'));
+            grid.appendChild(buildCard('🛡️ リバウンド王 (REB)', topReb, p => p.reb + ' REB'));
+            grid.appendChild(buildCard('🤝 アシスト王 (AST)', topAst, p => p.ast + ' AST'));
+        }
+
+        function changeRankingPeriod(p) {
+            state.rankingPeriod = p;
+            document.querySelectorAll('[id^="period-btn-"]').forEach(btn => {
+                btn.classList.remove('bg-white', 'dark:bg-slate-700', 'shadow-xs', 'text-orange-600', 'dark:text-orange-400');
+                btn.classList.add('text-slate-600', 'dark:text-slate-300');
+            });
+            const activeBtn = document.getElementById(`period-btn-${p}`);
+            if (activeBtn) activeBtn.classList.add('bg-white', 'dark:bg-slate-700', 'shadow-xs', 'text-orange-600', 'dark:text-orange-400');
+
+            const customContainer = document.getElementById('custom-period-container');
+            if (customContainer) {
+                if (p === 'custom') customContainer.classList.remove('hidden');
+                else customContainer.classList.add('hidden');
+            }
+
+            renderRankingsView();
+        }
+
+        function changeRankingMatchType(type) {
+            state.rankingMatchType = type;
+            document.querySelectorAll('[id^="matchtype-btn-"]').forEach(btn => {
+                btn.classList.remove('bg-orange-600', 'text-white');
+                btn.classList.add('bg-slate-200', 'dark:bg-slate-800', 'text-slate-700', 'dark:text-slate-300');
+            });
+            const activeBtn = document.getElementById(`matchtype-btn-${type}`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-orange-600', 'text-white');
+                activeBtn.classList.remove('bg-slate-200', 'dark:bg-slate-800', 'text-slate-700', 'dark:text-slate-300');
+            }
+            renderRankingsView();
+        }
+
+        function renderNewsView() {
+            const newsEl = document.getElementById('news-content-display');
+            if (newsEl) newsEl.innerText = state.newsContent;
+            const channelIdEl = document.getElementById('youtube-channel-id-display');
+            if (channelIdEl) channelIdEl.innerText = `ID: ${state.youtubeChannelId}`;
+        }
+
+        function editNewsContent() {
+            const val = prompt('お知らせ内容を入力:', state.newsContent);
+            if (val !== null) {
+                state.newsContent = val;
+                saveStateToStorage();
+                renderNewsView();
+                showToast('お知らせを更新しました');
+            }
+        }
+
+        function renderFullTeamsView() {
+            const grid = document.getElementById('full-teams-list-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            const t = state.tournaments.find(item => item.id === state.activeTournamentId);
+            if (!t) return;
+            normalizeTournamentTeams(t);
+
+            (t.teams || []).forEach((tm, idx) => {
+                const card = document.createElement('div');
+                card.className = "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-3";
+
+                const logoHtml = tm.image 
+                    ? `<img src="${tm.image}" class="w-10 h-10 rounded-full object-cover border dark:border-slate-700 shadow-xs">` 
+                    : `<div class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 border dark:border-slate-700 text-slate-500 font-bold flex items-center justify-center text-sm">🛡️</div>`;
+
+                const memberBadges = (tm.members || []).map(mb => {
+                    const isGuest = GUEST_PLAYERS.includes(mb) || mb.includes('ゲスト');
+                    const bg = isGuest 
+                        ? 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800' 
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700';
+                    return `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${bg}">${mb}</span>`;
+                }).join('');
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between border-b pb-2 dark:border-slate-800">
+                        <div class="flex items-center gap-2">
+                            ${logoHtml}
+                            <div>
+                                <span class="text-[10px] font-mono font-bold text-slate-400 block">${tm.code || 'T-0' + (idx+1)}</span>
+                                <h3 class="font-extrabold text-slate-900 dark:text-white text-sm">${tm.name}</h3>
+                            </div>
+                        </div>
+                        <button onclick="requestPasscodeProtection(() => openAddTournamentTeamModal(${idx}))" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-bold">編集</button>
+                    </div>
+                    <div>
+                        <span class="text-[10px] text-slate-400 font-bold block mb-1">所属メンバー (${(tm.members||[]).length}名):</span>
+                        <div class="flex flex-wrap gap-1">${memberBadges || '<span class="text-xs text-slate-400">未設定</span>'}</div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function openSettingsModal() {
+            updateGasUrlFieldState();
+            document.getElementById('modal-settings-view').classList.remove('hidden');
+        }
+
+        function unlockGasUrlEditor() {
+            if (state.isAdminUnlocked) {
+                showToast('すでに管理者として認証済みです');
+                return;
+            }
+            requestPasscodeProtection(() => {
+                updateGasUrlFieldState();
+                showToast('管理者認証成功: GAS URLの編集が可能になりました');
+            });
+        }
+
+        function updateGasUrlFieldState() {
+            const input = document.getElementById('settings-gas-url');
+            const icon = document.getElementById('gas-url-lock-icon');
+            const text = document.getElementById('gas-url-lock-text');
+
+            if (!input) return;
+
+            if (state.isAdminUnlocked) {
+                input.type = 'text';
+                input.disabled = false;
+                input.value = state.gasUrl || '';
+                input.classList.remove('bg-slate-100', 'dark:bg-slate-900', 'text-slate-400', 'cursor-not-allowed');
+                input.classList.add('bg-white', 'dark:bg-slate-900', 'text-slate-800', 'dark:text-slate-100');
+                if (icon) icon.className = 'fa-solid fa-unlock text-emerald-500';
+                if (text) text.innerText = '編集可能 (解除済み)';
+            } else {
+                input.type = 'password';
+                input.disabled = true;
+                input.value = state.gasUrl ? '••••••••••••••••••••••••••••••••' : '';
+                input.classList.add('bg-slate-100', 'dark:bg-slate-900', 'text-slate-400', 'cursor-not-allowed');
+                input.classList.remove('bg-white', 'text-slate-800', 'dark:text-slate-100');
+                if (icon) icon.className = 'fa-solid fa-lock text-orange-600';
+                if (text) text.innerText = 'ロック中 (認証で解除)';
+            }
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('modal-settings-view').classList.add('hidden');
+        }
+
+        function showRuleModalFromSettings() {
+            closeSettingsModal();
+            showRuleModal();
+        }
+
+        function saveSettingsForm() {
+            if (state.isAdminUnlocked) {
+                const inputEl = document.getElementById('settings-gas-url');
+                if (inputEl && inputEl.type === 'text') {
+                    state.gasUrl = inputEl.value.trim();
+                }
+            }
+            saveStateToStorage();
+            closeSettingsModal();
+            renderNewsView();
+            showToast('設定を保存しました');
+        }
+
+        function addCourtInputField(val = '') {
+            const container = document.getElementById('tour-form-courts-container');
+            if (!container) return;
+            const courtIdx = container.children.length + 1;
+            const div = document.createElement('div');
+            div.className = "flex items-center gap-2";
+            div.innerHTML = `
+                <input type="text" value="${val}" placeholder="例: ${courtIdx}コート" class="court-input-item flex-1 border dark:border-slate-700 rounded-xl p-2 bg-slate-50 dark:bg-slate-800 text-xs font-semibold">
+                <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700 text-xs font-bold px-2 py-1">✕</button>
+            `;
+            container.appendChild(div);
+        }
+
+        function renderCourtInputFields(courtsArray = ['Aコート', 'Bコート']) {
+            const container = document.getElementById('tour-form-courts-container');
+            if (!container) return;
+            container.innerHTML = '';
+            if (!courtsArray || courtsArray.length === 0) {
+                addCourtInputField('Aコート');
+                addCourtInputField('Bコート');
+            } else {
+                courtsArray.forEach(c => addCourtInputField(c));
+            }
+        }
+
+        function getCourtInputValues() {
+            const inputs = document.querySelectorAll('.court-input-item');
+            const res = [];
+            inputs.forEach(inp => {
+                const val = inp.value.trim();
+                if (val) res.push(val);
+            });
+            return res.length > 0 ? res : ['Aコート'];
+        }
+
+        function openCreateTournamentModal() {
+            state.editingTournamentId = null;
+            document.getElementById('modal-tournament-title').innerText = '試合作成';
+            document.getElementById('tour-form-category').value = '大会';
+            document.getElementById('tour-form-format').value = 'リーグ形式';
+            document.getElementById('tour-form-name').value = '1011DNTリーグ👑';
+            document.getElementById('tour-form-location').value = '沖縄県総合運動公園体育館';
+            renderCourtInputFields(['Aコート', 'Bコート']);
+            document.getElementById('modal-tournament-form').classList.remove('hidden');
+        }
+
+        function openEditTournamentModal() {
+            const t = state.tournaments.find(item => item.id === state.activeTournamentId);
+            if (!t) return;
+
+            state.editingTournamentId = t.id;
+            document.getElementById('modal-tournament-title').innerText = '大会情報編集';
+            document.getElementById('tour-form-category').value = t.category || '大会';
+            document.getElementById('tour-form-format').value = t.format || 'リーグ形式';
+            document.getElementById('tour-form-name').value = t.name || '';
+            document.getElementById('tour-form-location').value = t.location || '';
+            document.getElementById('tour-form-date').value = t.date || '';
+            document.getElementById('tour-form-timestart').value = t.timeStart || '';
+            document.getElementById('tour-form-timeend').value = t.timeEnd || '';
+            document.getElementById('tour-form-rule').value = t.ruleId || '';
+            renderCourtInputFields(t.courts || ['Aコート', 'Bコート']);
+            document.getElementById('tour-form-tags').value = (t.tags || []).join(', ');
+
+            document.getElementById('modal-tournament-form').classList.remove('hidden');
+        }
+
+        function closeTournamentModal() {
+            document.getElementById('modal-tournament-form').classList.add('hidden');
+        }
+
+        function copyPreviousTournamentData() {
+            if (state.tournaments.length === 0) {
+                showToast('前回の大会データが存在しません');
+                return;
+            }
+            const last = state.tournaments[state.tournaments.length - 1];
+            document.getElementById('tour-form-category').value = last.category || '大会';
+            document.getElementById('tour-form-format').value = last.format || 'リーグ形式';
+            document.getElementById('tour-form-name').value = last.name || '';
+            document.getElementById('tour-form-location').value = last.location || '';
+            renderCourtInputFields(last.courts || ['Aコート', 'Bコート']);
+            document.getElementById('tour-form-tags').value = (last.tags || []).join(', ');
+            showToast('前回の設定を複製しました');
         }
 
         function exportRankingPNG() {
