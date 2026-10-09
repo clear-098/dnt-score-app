@@ -103,8 +103,14 @@
             </div>
 
             <div class="flex items-center gap-2.5">
-                <!-- リアルタイム時計 (現在時刻のみ) -->
-                <div class="text-right bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1 rounded-xl shadow-inner">
+                <!-- クラウド同期ステータスバッジ -->
+                <button onclick="syncWithCloud()" class="text-[10px] bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 font-bold px-2.5 py-1 rounded-xl border border-emerald-300 dark:border-emerald-800 flex items-center gap-1 hover:bg-emerald-200 transition-all">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span id="cloud-status-text">🟢 クラウド同期中</span>
+                </button>
+
+                <!-- リアルタイム時計 -->
+                <div class="text-right bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1 rounded-xl shadow-inner hidden sm:block">
                     <div class="text-[8px] font-extrabold text-slate-400 dark:text-slate-500 leading-none uppercase tracking-wider mb-0.5" data-i18n="currentTime">現在時刻</div>
                     <div id="header-time" class="text-base font-black text-slate-900 dark:text-white font-mono leading-none">00:00:00</div>
                 </div>
@@ -117,7 +123,7 @@
         </div>
     </header>
 
-    <!-- サブメニュー (試合一覧 ➔ 個人ランキング ➔ 選手一覧 ➔ お知らせ & 動画) -->
+    <!-- サブメニュー -->
     <nav class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-[49px] z-30 shadow-xs">
         <div class="max-w-7xl mx-auto px-2 flex space-x-1 overflow-x-auto scrollbar-none py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300">
             <button onclick="switchView('dashboard')" id="nav-dashboard" class="nav-btn px-3.5 py-2 rounded-xl flex items-center gap-1.5 whitespace-nowrap transition-all bg-orange-600 text-white shadow-xs">
@@ -148,9 +154,7 @@
                     <p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="dashSub">大会・練習試合の総合スコア管理と対戦表</p>
                 </div>
 
-                <!-- 検索バー・タブ・カレンダーアイコン・試合作成を横一列に統合 -->
                 <div class="flex flex-wrap items-center gap-2">
-                    <!-- 種別タブ (ALL / 大会 / 練習試合) -->
                     <div class="flex items-center gap-1 text-xs font-bold bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
                         <button onclick="setDashboardTab('ALL')" id="dash-tab-ALL" class="px-2.5 py-1.5 rounded-lg bg-orange-600 text-white shadow-xs transition-all">
                             ALL
@@ -163,30 +167,26 @@
                         </button>
                     </div>
 
-                    <!-- 検索バー -->
                     <input type="text" id="dashboard-search-input" onkeyup="renderDashboard()" placeholder="🔍 検索..." class="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs rounded-xl px-3 py-2 w-28 sm:w-36 text-slate-800 dark:text-white focus:outline-none focus:border-orange-500">
 
-                    <!-- カレンダー表示切替ボタン（アイコンのみ） -->
-                    <button onclick="toggleDashboardCalendar()" id="dash-calendar-toggle-btn" class="w-9 h-9 bg-orange-600 text-white border border-slate-200 dark:border-slate-700 text-xs rounded-xl font-bold flex items-center justify-center hover:bg-orange-700 transition-all shadow-xs shrink-0" title="カレンダー表示切替">
+                    <button onclick="toggleDashboardCalendar()" id="dash-calendar-toggle-btn" class="w-9 h-9 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 text-xs rounded-xl font-bold flex items-center justify-center transition-all shadow-xs shrink-0" title="カレンダー表示切替">
                         <i class="fa-solid fa-calendar-days text-sm"></i>
                     </button>
 
-                    <!-- 試合作成ボタン -->
                     <button onclick="openCreateTournamentModal()" class="bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-md transition-all whitespace-nowrap flex items-center gap-1">
                         <i class="fa-solid fa-plus"></i> <span data-i18n="createMatchBtn">試合作成</span>
                     </button>
                 </div>
             </div>
 
-            <!-- 試合開催日カレンダーウィジェット (文章なし・試合日マーカーのみ) -->
-            <div id="dashboard-calendar-container" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-3">
+            <!-- 試合開催日カレンダー (初期閉じ状態) -->
+            <div id="dashboard-calendar-container" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-3 hidden">
                 <div class="flex items-center justify-between border-b pb-2.5 dark:border-slate-800">
                     <div class="flex items-center gap-2">
                         <button onclick="changeCalendarMonth(-1)" class="w-7 h-7 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 rounded-lg flex items-center justify-center font-bold text-slate-700 dark:text-slate-200 text-xs">‹</button>
                         <h3 id="calendar-month-label" class="font-extrabold text-slate-900 dark:text-white text-sm font-mono">2026年 10月</h3>
                         <button onclick="changeCalendarMonth(1)" class="w-7 h-7 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 rounded-lg flex items-center justify-center font-bold text-slate-700 dark:text-slate-200 text-xs">›</button>
                     </div>
-                    <!-- 凡例 -->
                     <div class="flex items-center gap-3 text-[10px] font-bold text-slate-500 dark:text-slate-400">
                         <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-orange-500 inline-block"></span> 🏆 大会</span>
                         <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-indigo-600 inline-block"></span> ⚡ 練習試合</span>
@@ -194,10 +194,8 @@
                     </div>
                 </div>
 
-                <!-- 選択日フィルター案内バー -->
                 <div id="calendar-selected-banner" class="hidden"></div>
 
-                <!-- 曜日ヘッダー -->
                 <div class="grid grid-cols-7 gap-1 text-center font-bold text-[10px] text-slate-400 dark:text-slate-500 uppercase">
                     <span class="text-rose-500">日</span>
                     <span>月</span>
@@ -208,16 +206,11 @@
                     <span class="text-sky-500">土</span>
                 </div>
 
-                <!-- 日付グリッド (JSで動的挿入) -->
-                <div id="calendar-grid-cells" class="grid grid-cols-7 gap-1">
-                    <!-- JS動的生成 -->
-                </div>
+                <div id="calendar-grid-cells" class="grid grid-cols-7 gap-1"></div>
             </div>
 
             <!-- 試合・大会カードリスト -->
-            <div id="tournament-cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <!-- JSで動的描画 -->
-            </div>
+            <div id="tournament-cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
         </section>
 
         <!-- 画面 2: 試合詳細・スコア入力・順位表 -->
@@ -271,19 +264,19 @@
                         <button onclick="addMatchRow()" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs px-3 py-1.5 rounded-xl font-bold border border-slate-300 dark:border-slate-700">
                             ＋ 手動追加
                         </button>
-                        <button onclick="generateMatchSchedule()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3 py-1.5 rounded-xl font-bold shadow-sm">
+                        <button onclick="triggerMatchScheduleGeneration()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3 py-1.5 rounded-xl font-bold shadow-sm">
                             ⚔️ 対戦表自動生成
+                        </button>
+                        <button onclick="requestPasscodeProtection(() => resetTournamentMatches())" class="bg-rose-100 hover:bg-rose-200 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300 dark:hover:bg-rose-900 text-xs px-3 py-1.5 rounded-xl font-bold border border-rose-300 dark:border-rose-800">
+                            🗑️ 対戦表リセット
                         </button>
                     </div>
                 </div>
 
-                <!-- 時間・コート別グループ表示コンテナ -->
-                <div id="matches-time-grouped-container" class="space-y-6">
-                    <!-- JSで動的生成 -->
-                </div>
+                <div id="matches-time-grouped-container" class="space-y-6"></div>
             </div>
 
-            <!-- 大会順位表 (勝ち点無し・得失点差優先) -->
+            <!-- 大会順位表 -->
             <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-6 shadow-sm space-y-4">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
                     <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -302,7 +295,6 @@
                     </div>
                 </div>
 
-                <!-- 画像キャプチャ対象領域 (横スクロール対応) -->
                 <div id="ranking-capture-area" class="bg-white dark:bg-slate-900 p-3 rounded-xl">
                     <div class="text-center mb-3 hidden text-slate-800 dark:text-slate-100 font-bold text-base" id="ranking-export-header"></div>
                     <div class="overflow-x-auto pb-2.5">
@@ -319,9 +311,7 @@
                                     <th class="p-2.5 text-center">失点</th>
                                 </tr>
                             </thead>
-                            <tbody id="detail-ranking-tbody" class="divide-y divide-slate-200 dark:divide-slate-800">
-                                <!-- JS動的更新 -->
-                            </tbody>
+                            <tbody id="detail-ranking-tbody" class="divide-y divide-slate-200 dark:divide-slate-800"></tbody>
                         </table>
                     </div>
                 </div>
@@ -342,9 +332,7 @@
                 <h2 class="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
                     🛡️ 参加チーム＆メンバーリスト
                 </h2>
-                <div id="full-teams-list-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <!-- JSでカード一覧表示 -->
-                </div>
+                <div id="full-teams-list-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
             </div>
         </section>
 
@@ -357,7 +345,6 @@
                         <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">確定済み試合の個人スタッツランキング</p>
                     </div>
 
-                    <!-- 期間・種別フィルター -->
                     <div class="flex flex-wrap items-center gap-2">
                         <div class="bg-slate-100 dark:bg-slate-800 p-1 rounded-xl flex items-center text-xs font-bold">
                             <button onclick="changeRankingPeriod('monthly')" id="period-btn-monthly" class="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-700 shadow-xs text-orange-600 dark:text-orange-400">今月</button>
@@ -368,7 +355,6 @@
                     </div>
                 </div>
 
-                <!-- カスタム期間指定入力欄 -->
                 <div id="custom-period-container" class="hidden bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-wrap items-center gap-3 text-xs font-bold">
                     <span>集計期間:</span>
                     <input type="date" id="ranking-date-from" onchange="renderRankingsView()" class="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-1.5 text-slate-800 dark:text-white">
@@ -376,7 +362,6 @@
                     <input type="date" id="ranking-date-to" onchange="renderRankingsView()" class="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-1.5 text-slate-800 dark:text-white">
                 </div>
 
-                <!-- 試合種別フィルター -->
                 <div class="flex items-center gap-2 text-xs font-bold">
                     <span class="text-slate-500 dark:text-slate-400">対象区分:</span>
                     <button onclick="changeRankingMatchType('ALL')" id="matchtype-btn-ALL" class="px-3 py-1 rounded-lg bg-orange-600 text-white">ALL</button>
@@ -384,16 +369,13 @@
                     <button onclick="changeRankingMatchType('練習試合')" id="matchtype-btn-練習試合" class="px-3 py-1 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">⚡ 練習試合のみ</button>
                 </div>
 
-                <!-- 種目別上位グリッド (スマホ最適化) -->
                 <div class="pt-1">
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4" id="rankings-cards-grid">
-                        <!-- JS動的表示 -->
-                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4" id="rankings-cards-grid"></div>
                 </div>
             </div>
         </section>
 
-        <!-- 画面 5: 選手一覧 (完全復元・不参加注記・位置/男女サマリー付) -->
+        <!-- 画面 5: 選手一覧 (削除ボタン排除・同姓同名アラート対応) -->
         <section id="view-players" class="view-section hidden space-y-6">
             <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-6 shadow-sm space-y-4">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-4">
@@ -401,7 +383,7 @@
                         <h2 class="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
                             <span>🏀 登録選手メンバー一覧</span>
                         </h2>
-                        <p class="text-[9px] text-slate-400/70 font-semibold mt-1">※ 3ヶ月以上不参加の場合は非アクティブと判定されます。</p>
+                        <p class="text-[10px] text-slate-400/80 font-bold mt-1">※ 各選手をタップすると詳細プロフィールと過去の参加＆得点履歴が閲覧できます。</p>
                     </div>
                     <div class="flex items-center gap-2">
                         <button onclick="requestPasscodeProtection(() => openAddPlayerModal())" class="bg-orange-600 hover:bg-orange-700 text-white text-xs px-4 py-2.5 rounded-xl font-bold shadow-md transition-all whitespace-nowrap">
@@ -410,7 +392,6 @@
                     </div>
                 </div>
 
-                <!-- フィルター＆ポジション／男女集計サマリー -->
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs">
                     <div class="flex items-center gap-2 flex-1">
                         <input type="text" id="player-search-input" onkeyup="renderPlayersView()" placeholder="🔍 選手名・ID・背番号で検索..." class="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs rounded-xl px-3 py-2 w-full sm:w-64 text-slate-800 dark:text-white focus:outline-none focus:border-orange-500">
@@ -419,39 +400,33 @@
                             <option value="pts">通算PTS順</option>
                         </select>
                     </div>
-                    <div id="position-count-summary" class="flex flex-wrap items-center gap-2 font-bold text-[11px]">
-                        <!-- JSで動的サマリー -->
-                    </div>
+                    <div id="position-count-summary" class="flex flex-wrap items-center gap-2 font-bold text-[11px]"></div>
                 </div>
 
-                <!-- 選手一覧テーブル (横スクロール可視化) -->
                 <div class="overflow-x-auto pb-3">
                     <table class="w-full text-xs text-left border-collapse min-w-[680px]">
                         <thead class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 uppercase text-[11px] font-bold">
                             <tr>
                                 <th class="p-2.5 text-left w-20">管理ID</th>
                                 <th class="p-2.5 text-center w-14">背番号</th>
-                                <th class="p-2.5 text-left min-w-[120px]">選手名</th>
+                                <th class="p-2.5 text-left min-w-[140px]">選手名</th>
                                 <th class="p-2.5 text-center w-14">性別</th>
                                 <th class="p-2.5 text-center">ポジション</th>
                                 <th class="p-2.5 text-center font-bold text-orange-600 dark:text-orange-400 bg-orange-50/50 dark:bg-orange-950/30">通算PTS</th>
                                 <th class="p-2.5 text-center">ステータス</th>
                                 <th class="p-2.5 text-center admin-only-col hidden">管理者情報 (年齢/身長/経験)</th>
-                                <th class="p-2.5 text-right w-24">操作</th>
+                                <th class="p-2.5 text-right w-16">操作</th>
                             </tr>
                         </thead>
-                        <tbody id="players-table-tbody" class="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
-                            <!-- JS動的挿入 -->
-                        </tbody>
+                        <tbody id="players-table-tbody" class="divide-y divide-slate-200 dark:divide-slate-800 font-medium"></tbody>
                     </table>
                 </div>
             </div>
         </section>
 
-        <!-- 画面 6: お知らせ & 動画 (完全復元) -->
+        <!-- 画面 6: お知らせ & 動画 -->
         <section id="view-news" class="view-section hidden space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- お知らせ掲示板 -->
                 <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
                     <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                         <h3 class="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
@@ -461,18 +436,15 @@
                             ✏️ 編集
                         </button>
                     </div>
-                    <div id="news-content-display" class="bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/60 p-4 rounded-xl text-xs text-slate-800 dark:text-slate-200 font-semibold leading-relaxed whitespace-pre-wrap">
-                        <!-- JSで描画 -->
-                    </div>
+                    <div id="news-content-display" class="bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/60 p-4 rounded-xl text-xs text-slate-800 dark:text-slate-200 font-semibold leading-relaxed whitespace-pre-wrap"></div>
                 </div>
 
-                <!-- 公式YouTubeチャンネルリンク & スタッツ情報 -->
                 <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
                     <div class="border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center justify-between">
                         <h3 class="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                             <span class="text-red-600">📺</span> 公式YouTubeチャンネル
                         </h3>
-                        <span class="text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-400 font-bold px-2 py-0.5 rounded-full">🟢 自動同期中</span>
+                        <span class="text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-400 font-bold px-2 py-0.5 rounded-full">🟢 連携中</span>
                     </div>
 
                     <div class="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 p-4 rounded-xl space-y-4">
@@ -486,17 +458,6 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-2 text-center pt-2 border-t border-slate-200 dark:border-slate-700">
-                            <div class="bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
-                                <span class="text-[10px] font-bold text-slate-400 block">チャンネル登録者</span>
-                                <span id="yt-subscribers-count" class="text-base font-extrabold text-slate-900 dark:text-white font-mono">1.2K</span>
-                            </div>
-                            <div class="bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
-                                <span class="text-[10px] font-bold text-slate-400 block">公開動画本数</span>
-                                <span id="yt-videos-count" class="text-base font-extrabold text-slate-900 dark:text-white font-mono">48</span>
-                            </div>
-                        </div>
-
                         <a href="https://www.youtube.com/channel/UCSCMaSbfS76tEZ2kBbne5nA" target="_blank" rel="noopener noreferrer" class="block w-full text-center bg-red-600 hover:bg-red-700 text-white font-bold text-xs py-2.5 rounded-xl shadow-md transition-all">
                             <i class="fa-brands fa-youtube mr-1.5"></i> ▶ YouTubeチャンネルを開く
                         </a>
@@ -507,7 +468,7 @@
 
     </main>
 
-    <!-- モーダル: 試合作成 / 編集 -->
+    <!-- モーダル: 試合作成 / 編集 (対戦表リセット機能付き) -->
     <div id="modal-tournament-form" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 w-full max-w-lg rounded-2xl p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-slate-800">
             <div class="flex items-center justify-between border-b pb-2 dark:border-slate-800">
@@ -516,9 +477,12 @@
             </div>
 
             <div class="space-y-3 text-xs font-semibold">
-                <div>
-                    <button type="button" onclick="copyPreviousTournamentData()" class="w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 py-2 rounded-xl font-bold border border-slate-300 dark:border-slate-700">
-                        📋 前回の試合/大会から設定を複製
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" onclick="copyPreviousTournamentData()" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 py-2 rounded-xl font-bold border border-slate-300 dark:border-slate-700">
+                        📋 前回の設定を複製
+                    </button>
+                    <button type="button" onclick="resetTournamentMatches()" class="bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-700 dark:text-rose-300 py-2 rounded-xl font-bold border border-rose-200 dark:border-rose-900">
+                        🗑️ 対戦表をリセット
                     </button>
                 </div>
                 <div>
@@ -558,11 +522,8 @@
                 </div>
                 <div>
                     <label class="block text-slate-600 dark:text-slate-400 mb-1">適用ルール</label>
-                    <select id="tour-form-rule" class="w-full border dark:border-slate-700 rounded-xl p-2 bg-slate-50 dark:bg-slate-800">
-                        <!-- JSで動的生成 -->
-                    </select>
+                    <select id="tour-form-rule" class="w-full border dark:border-slate-700 rounded-xl p-2 bg-slate-50 dark:bg-slate-800"></select>
                 </div>
-                <!-- コート個別入力欄 -->
                 <div>
                     <div class="flex justify-between items-center mb-1">
                         <label class="block text-slate-600 dark:text-slate-400">使用コート名</label>
@@ -570,9 +531,7 @@
                             ＋ コート追加
                         </button>
                     </div>
-                    <div id="tour-form-courts-container" class="space-y-1.5">
-                        <!-- JS動的生成 -->
-                    </div>
+                    <div id="tour-form-courts-container" class="space-y-1.5"></div>
                 </div>
                 <div>
                     <label class="block text-slate-600 dark:text-slate-400 mb-1">タグ (カンマ区切り)</label>
@@ -583,6 +542,79 @@
             <div class="flex justify-end gap-2 pt-2 border-t dark:border-slate-800">
                 <button onclick="closeTournamentModal()" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 font-bold text-slate-600 dark:text-slate-300 text-xs">キャンセル</button>
                 <button onclick="saveTournamentForm()" class="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow">保存する</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- モーダル: 汎用確認ダイアログ -->
+    <div id="modal-confirm-dialog" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 w-full max-w-sm rounded-2xl p-5 shadow-2xl space-y-4 text-center border border-slate-200 dark:border-slate-800">
+            <div class="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto text-xl font-bold">
+                ⚠️
+            </div>
+            <h3 id="confirm-dialog-title" class="font-extrabold text-base">確認</h3>
+            <p id="confirm-dialog-msg" class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">対戦表を新しく作成し直しますか？既存の対戦・スコアデータは上書きされます。</p>
+            <div class="flex gap-2 pt-2">
+                <button onclick="closeConfirmModal()" class="w-1/2 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 font-bold text-slate-600 dark:text-slate-300 text-xs">キャンセル</button>
+                <button id="confirm-dialog-ok-btn" class="w-1/2 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow">実行する</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- モーダル: 選手詳細モーダル -->
+    <div id="modal-player-detail" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 w-full max-w-lg rounded-2xl p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-slate-800">
+            <div class="flex items-center justify-between border-b pb-3 dark:border-slate-800">
+                <div class="flex items-center gap-2">
+                    <span id="player-detail-number-badge" class="w-8 h-8 rounded-xl bg-orange-600 text-white font-mono font-black flex items-center justify-center text-sm shadow-xs">#1</span>
+                    <div>
+                        <h3 id="player-detail-name" class="font-extrabold text-base text-slate-900 dark:text-white leading-tight">選手名</h3>
+                        <span id="player-detail-id" class="text-[10px] font-mono text-slate-400">ID: 0001</span>
+                    </div>
+                </div>
+                <button onclick="closePlayerDetailModal()" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs font-bold">
+                <div class="bg-slate-50 dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <span class="text-[10px] text-slate-400 block font-normal">通算得点</span>
+                    <span id="player-detail-total-pts" class="text-base font-mono font-black text-orange-600 dark:text-orange-400">0 PTS</span>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <span class="text-[10px] text-slate-400 block font-normal">平均得点</span>
+                    <span id="player-detail-avg-pts" class="text-base font-mono font-extrabold text-slate-800 dark:text-slate-200">0.0</span>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <span class="text-[10px] text-slate-400 block font-normal">参加試合数</span>
+                    <span id="player-detail-matches-count" class="text-base font-mono font-extrabold text-indigo-600 dark:text-indigo-400">0 試合</span>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <span class="text-[10px] text-slate-400 block font-normal">ステータス</span>
+                    <div id="player-detail-status-badge" class="mt-0.5">🟢</div>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs space-y-1 font-medium">
+                <div class="flex justify-between">
+                    <span class="text-slate-500 dark:text-slate-400">性別 / ポジション:</span>
+                    <span id="player-detail-gender-pos" class="font-bold text-slate-800 dark:text-slate-200">男 / 未設定</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500 dark:text-slate-400">年齢 / 身長 / 経験:</span>
+                    <span id="player-detail-body-info" class="font-bold text-slate-800 dark:text-slate-200">- / - / -</span>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <h4 class="font-extrabold text-xs text-slate-900 dark:text-white flex items-center justify-between border-b pb-1 dark:border-slate-800">
+                    <span>📜 過去の参加＆獲得スコア履歴</span>
+                    <span id="player-history-count-tag" class="text-[10px] text-slate-400 font-normal">0 件</span>
+                </h4>
+                <div id="player-match-history-container" class="space-y-2 max-h-48 overflow-y-auto pr-1 text-xs"></div>
+            </div>
+
+            <div class="text-right pt-2 border-t dark:border-slate-800">
+                <button onclick="closePlayerDetailModal()" class="px-4 py-2 rounded-xl bg-slate-800 dark:bg-slate-700 text-white font-bold text-xs">閉じる</button>
             </div>
         </div>
     </div>
@@ -607,9 +639,7 @@
                 <h3 id="modal-rule-title" class="font-extrabold text-base">📜 DNTルール①</h3>
                 <button onclick="closeRuleModal()" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
             </div>
-            <div id="modal-rule-content-table" class="overflow-x-auto text-xs">
-                <!-- 表形式ルール -->
-            </div>
+            <div id="modal-rule-content-table" class="overflow-x-auto text-xs"></div>
             <div class="text-right">
                 <button onclick="closeRuleModal()" class="px-4 py-2 rounded-xl bg-slate-800 dark:bg-slate-700 text-white font-bold text-xs">閉じる</button>
             </div>
@@ -636,9 +666,7 @@
             </div>
             
             <div id="printable-matrix-area" class="overflow-x-auto p-2 bg-white dark:bg-slate-900 rounded-xl pb-3">
-                <table id="matrix-table" class="w-full text-xs text-center border-collapse min-w-[640px] whitespace-nowrap">
-                    <!-- JS動的描画 -->
-                </table>
+                <table id="matrix-table" class="w-full text-xs text-center border-collapse min-w-[640px] whitespace-nowrap"></table>
             </div>
 
             <div class="text-right">
@@ -673,9 +701,7 @@
                 </div>
                 <div>
                     <label class="block text-slate-600 dark:text-slate-400 mb-1">メンバーアサイン (複数選択 - ゲスト含む)</label>
-                    <div id="team-member-checkboxes" class="grid grid-cols-2 gap-1.5 max-h-40 overflow-y-auto border dark:border-slate-700 p-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-[11px]">
-                        <!-- JS動的チェックボックス -->
-                    </div>
+                    <div id="team-member-checkboxes" class="grid grid-cols-2 gap-1.5 max-h-40 overflow-y-auto border dark:border-slate-700 p-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-[11px]"></div>
                 </div>
             </div>
 
@@ -686,7 +712,7 @@
         </div>
     </div>
 
-    <!-- モーダル: 選手新規追加・編集 (管理ID不変・固定) -->
+    <!-- モーダル: 選手新規追加・編集 (同姓同名警告アラート搭載) -->
     <div id="modal-player-form" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 w-full max-w-md rounded-2xl p-5 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto border border-slate-200 dark:border-slate-800">
             <div class="flex items-center justify-between border-b pb-2 dark:border-slate-800">
@@ -704,8 +730,11 @@
                     <input type="number" id="player-form-number" placeholder="1" class="w-full border dark:border-slate-700 rounded-xl p-2 bg-slate-50 dark:bg-slate-800 font-mono">
                 </div>
                 <div>
-                    <label class="block text-slate-600 dark:text-slate-400 mb-1">選手名 (同名不可)</label>
-                    <input type="text" id="player-form-name" placeholder="まさき" class="w-full border dark:border-slate-700 rounded-xl p-2 bg-slate-50 dark:bg-slate-800">
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-slate-600 dark:text-slate-400">選手名</label>
+                        <span id="player-duplicate-warning" class="text-rose-600 dark:text-rose-400 font-extrabold text-[11px] hidden animate-pulse">⚠️ 同姓同名</span>
+                    </div>
+                    <input type="text" id="player-form-name" oninput="checkDuplicatePlayerName(this.value)" placeholder="まさき" class="w-full border dark:border-slate-700 rounded-xl p-2 bg-slate-50 dark:bg-slate-800">
                 </div>
                 <div>
                     <label class="block text-slate-600 dark:text-slate-400 mb-1">性別</label>
@@ -747,7 +776,7 @@
         </div>
     </div>
 
-    <!-- モーダル: 設定 (テーマ設定, 言語設定, ルール一覧確認ボタン, 管理者設定) -->
+    <!-- モーダル: 設定 -->
     <div id="modal-settings-view" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 w-full max-w-md rounded-2xl p-5 shadow-2xl space-y-4 border border-slate-200 dark:border-slate-800">
             <div class="flex items-center justify-between border-b pb-2 dark:border-slate-800">
@@ -756,7 +785,6 @@
             </div>
 
             <div class="space-y-4 text-xs font-semibold">
-                <!-- テーマ設定 -->
                 <div>
                     <label class="block text-slate-600 dark:text-slate-400 mb-1">🎨 テーマ (背景色 / Theme)</label>
                     <div class="grid grid-cols-2 gap-2">
@@ -769,7 +797,6 @@
                     </div>
                 </div>
 
-                <!-- 言語設定 -->
                 <div>
                     <label class="block text-slate-600 dark:text-slate-400 mb-1">🌐 表示言語 / Language</label>
                     <div class="grid grid-cols-2 gap-2">
@@ -782,14 +809,12 @@
                     </div>
                 </div>
 
-                <!-- ルール一覧ボタン -->
                 <div>
                     <button type="button" onclick="showRuleModalFromSettings()" class="w-full bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-xs hover:bg-indigo-100 transition-all">
                         📜 登録中のルール一覧を確認
                     </button>
                 </div>
 
-                <!-- 管理者設定 -->
                 <div class="border-t dark:border-slate-800 pt-3 mt-2">
                     <div class="flex items-center gap-1.5 mb-2 text-slate-700 dark:text-slate-200 font-extrabold text-xs">
                         <i class="fa-solid fa-user-shield text-orange-600"></i>
@@ -842,47 +867,47 @@
             { item: '変更事項', content: '賞金なしに伴い費用1500円とする' }
         ];
 
-        // 全35名の登録選手一覧 (ゲストは含まれない)
+        // 全35名の登録選手一覧 (ポジションはすべて未設定 `[]` に設定)
         const INITIAL_PLAYERS = [
-            { id: '0001', name: 'まさき', gender: '男', number: '1', positions: ['PG'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
-            { id: '0002', name: 'ゆうきさん', gender: '男', number: '2', positions: ['SG'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
-            { id: '0003', name: 'ゆうき', gender: '男', number: '3', positions: ['SF'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
-            { id: '0004', name: 'まこ', gender: '女', number: '4', positions: ['PG'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
-            { id: '0005', name: 'なかもと', gender: '男', number: '5', positions: ['PF'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
-            { id: '0006', name: 'ゆうや', gender: '男', number: '6', positions: ['C'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
-            { id: '0007', name: 'もりさね', gender: '男', number: '7', positions: ['SF'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0001', name: 'まさき', gender: '男', number: '1', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0002', name: 'ゆうきさん', gender: '男', number: '2', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0003', name: 'ゆうき', gender: '男', number: '3', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0004', name: 'まこ', gender: '女', number: '4', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0005', name: 'なかもと', gender: '男', number: '5', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0006', name: 'ゆうや', gender: '男', number: '6', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0007', name: 'もりさね', gender: '男', number: '7', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
 
-            { id: '0008', name: 'ひろき', gender: '男', number: '8', positions: ['PG'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
-            { id: '0009', name: 'かずや', gender: '男', number: '9', positions: ['SG'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
-            { id: '0010', name: 'のりや', gender: '男', number: '10', positions: ['SF'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
-            { id: '0011', name: 'たかし', gender: '男', number: '11', positions: ['PF'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
-            { id: '0012', name: 'たくみ', gender: '男', number: '12', positions: ['C'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
-            { id: '0013', name: 'こうだい', gender: '男', number: '13', positions: ['SG'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
-            { id: '0014', name: 'じげん', gender: '男', number: '14', positions: ['SF'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0008', name: 'ひろき', gender: '男', number: '8', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0009', name: 'かずや', gender: '男', number: '9', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0010', name: 'のりや', gender: '男', number: '10', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0011', name: 'たかし', gender: '男', number: '11', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0012', name: 'たくみ', gender: '男', number: '12', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0013', name: 'こうだい', gender: '男', number: '13', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0014', name: 'じげん', gender: '男', number: '14', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
 
-            { id: '0015', name: 'もってぃ', gender: '男', number: '15', positions: ['PG'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
-            { id: '0016', name: 'かつお', gender: '男', number: '16', positions: ['SG'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
-            { id: '0017', name: 'たーよー', gender: '男', number: '17', positions: ['SF'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
-            { id: '0018', name: 'あや', gender: '女', number: '18', positions: ['SG'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
-            { id: '0019', name: 'くりあ', gender: '男', number: '19', positions: ['PF'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
-            { id: '0020', name: 'ひろや', gender: '男', number: '20', positions: ['C'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
-            { id: '0021', name: 'たいち', gender: '男', number: '21', positions: ['PG'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0015', name: 'もってぃ', gender: '男', number: '15', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0016', name: 'かつお', gender: '男', number: '16', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0017', name: 'たーよー', gender: '男', number: '17', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0018', name: 'あや', gender: '女', number: '18', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0019', name: 'くりあ', gender: '男', number: '19', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0020', name: 'ひろや', gender: '男', number: '20', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0021', name: 'たいち', gender: '男', number: '21', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
 
-            { id: '0022', name: 'ゆうじ', gender: '男', number: '22', positions: ['PG'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
-            { id: '0023', name: 'しょう', gender: '男', number: '23', positions: ['SG'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
-            { id: '0024', name: 'ふみや', gender: '男', number: '24', positions: ['SF'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
-            { id: '0025', name: 'げんや', gender: '男', number: '25', positions: ['PF'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
-            { id: '0026', name: 'しょうご', gender: '男', number: '26', positions: ['C'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
-            { id: '0027', name: 'しょうま', gender: '男', number: '27', positions: ['SG'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
-            { id: '0028', name: 'とし', gender: '男', number: '28', positions: ['SF'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0022', name: 'ゆうじ', gender: '男', number: '22', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0023', name: 'しょう', gender: '男', number: '23', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0024', name: 'ふみや', gender: '男', number: '24', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0025', name: 'げんや', gender: '男', number: '25', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0026', name: 'しょうご', gender: '男', number: '26', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0027', name: 'しょうま', gender: '男', number: '27', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0028', name: 'とし', gender: '男', number: '28', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
 
-            { id: '0029', name: 'りょうと', gender: '男', number: '29', positions: ['PG'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
-            { id: '0030', name: 'もりね', gender: '男', number: '30', positions: ['SG'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
-            { id: '0031', name: 'しょうごくん', gender: '男', number: '31', positions: ['SF'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
-            { id: '0032', name: 'たけ', gender: '男', number: '32', positions: ['PF'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
-            { id: '0033', name: 'みつき', gender: '女', number: '33', positions: ['PG'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
-            { id: '0034', name: 'まさし', gender: '男', number: '34', positions: ['C'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
-            { id: '0035', name: 'ゆうみ', gender: '男', number: '35', positions: ['SG'], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' }
+            { id: '0029', name: 'りょうと', gender: '男', number: '29', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0030', name: 'もりね', gender: '男', number: '30', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0031', name: 'しょうごくん', gender: '男', number: '31', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0032', name: 'たけ', gender: '男', number: '32', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0033', name: 'みつき', gender: '女', number: '33', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0034', name: 'まさし', gender: '男', number: '34', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' },
+            { id: '0035', name: 'ゆうみ', gender: '男', number: '35', positions: [], lastDate: '2026-10-01', birth: '', height: null, exp: null, notes: '' }
         ];
 
         // アプリケーション状態 (State)
@@ -891,15 +916,13 @@
             lang: 'ja',
             passcode: '1234',
             isAdminUnlocked: false,
-            gasUrl: '',
+            gasUrl: 'https://script.google.com/macros/s/AKfycbwsTY_zE9VTQ6e7SYY7nhAQzQSf6kZ42LXZqUdU32etez6E5lyuFkK154pDrZZCQFhNGA/exec',
             youtubeChannelId: 'UCSCMaSbfS76tEZ2kBbne5nA',
-            youtubeSubscribers: '1.2K',
-            youtubeVideos: '48',
             activeTournamentId: 'tour-1011-dnt-league',
             dashboardCategoryTab: 'ALL',
             dashboardCalendarMonth: new Date(2026, 9, 1),
             dashboardSelectedDate: null,
-            showCalendar: true,
+            showCalendar: false, // 初期閉じ状態
             editingTeamIndex: null,
             editingTournamentId: null,
             editingPlayerId: null,
@@ -974,40 +997,81 @@
             applyLanguageUI();
             startClock();
             initRuleSelectOptions();
-            fetchYouTubeRealtimeStats();
+
+            const calContainer = document.getElementById('dashboard-calendar-container');
+            if (calContainer) {
+                if (state.showCalendar) {
+                    calContainer.classList.remove('hidden');
+                    renderDashboardCalendar();
+                } else {
+                    calContainer.classList.add('hidden');
+                }
+            }
+
             renderDashboard();
             renderPlayersView();
             renderRankingsView();
+
+            if (state.gasUrl) {
+                syncWithCloud(true);
+            }
         };
 
-        function fetchYouTubeRealtimeStats() {
-            if (!state.youtubeChannelId) return;
-            const channelUrl = `https://www.youtube.com/channel/${state.youtubeChannelId}`;
-            fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(channelUrl)}`)
+        // クラウド (Googleスプレッドシート / GAS) 同期処理
+        function syncWithCloud(isSilent = false) {
+            if (!state.gasUrl) {
+                if (!isSilent) showToast('GASの連携URLが設定されていません');
+                return;
+            }
+
+            const statusText = document.getElementById('cloud-status-text');
+            if (statusText) statusText.innerText = '🔄 同期中...';
+
+            fetch(state.gasUrl)
                 .then(res => res.json())
-                .then(data => {
-                    if (!data || !data.contents) return;
-                    const html = data.contents;
-                    const subMatch = html.match(/"subscriberCountText":\s*\{\s*"accessibility":\s*\{\s*"accessibilityData":\s*\{\s*"label":\s*"([^"]+)"/);
-                    if (subMatch && subMatch[1]) {
-                        const simpleSub = subMatch[1].replace(/チャンネル登録者数\s*/, '').replace(/\s*人/, '');
-                        state.youtubeSubscribers = simpleSub;
-                        document.getElementById('yt-subscribers-count').innerText = simpleSub;
-                    }
-                    const videoMatch = html.match(/"videoCountText":\s*\{\s*"runs":\s*\[\s*\{\s*"text":\s*"([\d\.\,KMB]+)"/);
-                    if (videoMatch && videoMatch[1]) {
-                        state.youtubeVideos = videoMatch[1];
-                        document.getElementById('yt-videos-count').innerText = videoMatch[1];
+                .then(remoteData => {
+                    if (remoteData && remoteData.tournaments && Array.isArray(remoteData.tournaments)) {
+                        state = { ...state, ...remoteData };
+                        saveStateToStorage();
+                        renderDashboard();
+                        renderMatchesGrouped();
+                        recalculateDetailRanking();
+                        renderRankingsView();
+                        renderPlayersView();
+                        if (statusText) statusText.innerText = '🟢 クラウド同期済み';
+                        if (!isSilent) showToast('クラウドから最新データを取得しました');
+                    } else {
+                        pushToCloud(isSilent);
                     }
                 })
                 .catch(err => {
-                    console.log("YouTube Realtime Fetch Fallback Used", err);
+                    console.warn("GAS fetch warning:", err);
+                    if (statusText) statusText.innerText = '⚠️ ローカル保存中';
+                    if (!isSilent) showToast('ローカルモードで動作中（同期エラー）');
                 });
+        }
+
+        function pushToCloud(isSilent = false) {
+            if (!state.gasUrl) return;
+            const statusText = document.getElementById('cloud-status-text');
+            fetch(state.gasUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(state)
+            }).then(() => {
+                if (statusText) statusText.innerText = '🟢 クラウド同期済み';
+                if (!isSilent) showToast('クラウドへデータを保存しました');
+            }).catch(err => {
+                console.error("GAS push error:", err);
+                if (statusText) statusText.innerText = '⚠️ 保存未同期';
+            });
         }
 
         function saveStateToStorage() {
             try {
                 localStorage.setItem('dnt_score_pro_state', JSON.stringify(state));
+                pushToCloud(true);
             } catch (e) {
                 console.error("LocalStorage Save Error", e);
             }
@@ -1161,10 +1225,17 @@
             if (calEl) {
                 if (state.showCalendar) {
                     calEl.classList.remove('hidden');
-                    if (btnEl) btnEl.classList.add('bg-orange-600', 'text-white');
+                    renderDashboardCalendar();
+                    if (btnEl) {
+                        btnEl.classList.add('bg-orange-600', 'text-white');
+                        btnEl.classList.remove('bg-slate-100', 'dark:bg-slate-800');
+                    }
                 } else {
                     calEl.classList.add('hidden');
-                    if (btnEl) btnEl.classList.remove('bg-orange-600', 'text-white');
+                    if (btnEl) {
+                        btnEl.classList.remove('bg-orange-600', 'text-white');
+                        btnEl.classList.add('bg-slate-100', 'dark:bg-slate-800');
+                    }
                 }
             }
         }
@@ -1275,7 +1346,9 @@
             if (!container) return;
             container.innerHTML = '';
 
-            renderDashboardCalendar();
+            if (state.showCalendar) {
+                renderDashboardCalendar();
+            }
 
             const searchQuery = (document.getElementById('dashboard-search-input')?.value || '').toLowerCase();
             const tabCategory = state.dashboardCategoryTab || 'ALL';
@@ -1366,6 +1439,59 @@
                 }
                 return item;
             });
+        }
+
+        let confirmActionCallback = null;
+        function openConfirmModal(title, message, callback) {
+            confirmActionCallback = callback;
+            document.getElementById('confirm-dialog-title').innerText = title || '確認';
+            document.getElementById('confirm-dialog-msg').innerText = message || '実行しますか？';
+            
+            const okBtn = document.getElementById('confirm-dialog-ok-btn');
+            okBtn.onclick = function() {
+                closeConfirmModal();
+                if (confirmActionCallback) confirmActionCallback();
+            };
+
+            document.getElementById('modal-confirm-dialog').classList.remove('hidden');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('modal-confirm-dialog').classList.add('hidden');
+            confirmActionCallback = null;
+        }
+
+        function resetTournamentMatches() {
+            const t = state.tournaments.find(item => item.id === state.activeTournamentId);
+            if (!t) return;
+            openConfirmModal(
+                '対戦表のリセット確認',
+                'この大会の全対戦カードおよび入力済みスコアを消去（リセット）しますか？この操作は取り消せません。',
+                () => {
+                    t.matches = [];
+                    saveStateToStorage();
+                    closeTournamentModal();
+                    renderMatchesGrouped();
+                    recalculateDetailRanking();
+                    renderRankingsView();
+                    showToast('対戦表をクリア（リセット）しました');
+                }
+            );
+        }
+
+        function triggerMatchScheduleGeneration() {
+            const t = state.tournaments.find(item => item.id === state.activeTournamentId);
+            if (!t) return;
+
+            if (t.matches && t.matches.length > 0) {
+                openConfirmModal(
+                    '対戦表の再生成確認',
+                    '既に対戦カード・スコアが存在します。対戦表を新しく作成し直して上書きしますか？',
+                    generateMatchSchedule
+                );
+            } else {
+                generateMatchSchedule();
+            }
         }
 
         function generateMatchSchedule() {
@@ -1466,7 +1592,7 @@
             renderMatchesGrouped();
             recalculateDetailRanking();
             renderRankingsView();
-            showToast('対戦表を自動生成しました');
+            showToast('対戦表を自動生成・保存しました');
         }
 
         function addMatchRow() {
@@ -1509,6 +1635,7 @@
             renderRankingsView();
         }
 
+        // クォーター（前半・後半・1on1）スコア入力の直接・増減処理
         function updateQuarterScore(matchId, field, value) {
             const t = state.tournaments.find(item => item.id === state.activeTournamentId);
             if (!t || !t.matches) return;
@@ -1519,6 +1646,42 @@
             
             m.scoreA = (m.scoreA_1h || 0) + (m.scoreA_2h || 0) + (m.scoreA_1on1 || 0);
             m.scoreB = (m.scoreB_1h || 0) + (m.scoreB_2h || 0) + (m.scoreB_1on1 || 0);
+
+            saveStateToStorage();
+            renderMatchesGrouped();
+            recalculateDetailRanking();
+            renderRankingsView();
+        }
+
+        function adjustQuarterScore(matchId, field, delta) {
+            const t = state.tournaments.find(item => item.id === state.activeTournamentId);
+            if (!t || !t.matches) return;
+            const m = t.matches.find(item => item.id === matchId);
+            if (!m || m.isFinished) return;
+
+            const cur = m[field] || 0;
+            m[field] = Math.max(0, cur + delta);
+            
+            m.scoreA = (m.scoreA_1h || 0) + (m.scoreA_2h || 0) + (m.scoreA_1on1 || 0);
+            m.scoreB = (m.scoreB_1h || 0) + (m.scoreB_2h || 0) + (m.scoreB_1on1 || 0);
+
+            saveStateToStorage();
+            renderMatchesGrouped();
+            recalculateDetailRanking();
+            renderRankingsView();
+        }
+
+        function adjustTotalScore(matchId, team, delta) {
+            const t = state.tournaments.find(item => item.id === state.activeTournamentId);
+            if (!t || !t.matches) return;
+            const m = t.matches.find(item => item.id === matchId);
+            if (!m || m.isFinished) return;
+
+            if (team === 'A') {
+                m.scoreA = Math.max(0, (m.scoreA || 0) + delta);
+            } else {
+                m.scoreB = Math.max(0, (m.scoreB || 0) + delta);
+            }
 
             saveStateToStorage();
             renderMatchesGrouped();
@@ -1672,6 +1835,7 @@
             window.print();
         }
 
+        // 試合グループ描画 (GAME 1, GAME 2 ... 通し番号 ＆ スコア＋/ーボタン付き)
         function renderMatchesGrouped() {
             const container = document.getElementById('matches-time-grouped-container');
             if (!container) return;
@@ -1690,7 +1854,7 @@
                         <p class="text-xs text-slate-400">対戦カードがありません。</p>
                         <div class="flex justify-center gap-2">
                             <button onclick="addMatchRow()" class="bg-orange-600 text-white text-xs px-3.5 py-2 rounded-xl font-semibold shadow">＋ 手動で追加</button>
-                            <button onclick="generateMatchSchedule()" class="bg-indigo-600 text-white text-xs px-3.5 py-2 rounded-xl font-semibold shadow">⚔️ 対戦表を自動作成 (${t.format || 'リーグ形式'})</button>
+                            <button onclick="triggerMatchScheduleGeneration()" class="bg-indigo-600 text-white text-xs px-3.5 py-2 rounded-xl font-semibold shadow">⚔️ 対戦表を自動作成 (${t.format || 'リーグ形式'})</button>
                         </div>
                     </div>`;
                 return;
@@ -1706,6 +1870,12 @@
                 if (!m.isFinished && !courtNextActiveMap[cKey]) {
                     courtNextActiveMap[cKey] = m.id;
                 }
+            });
+
+            // GAME 1, GAME 2 ... 通し番号マップ
+            const gameNumberMap = {};
+            matchesSortedByTime.forEach((m, idx) => {
+                gameNumberMap[m.id] = idx + 1;
             });
 
             const sortedMatches = [...matches].sort((a, b) => {
@@ -1726,6 +1896,7 @@
                 block.className = 'bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-xl p-3.5 space-y-3';
 
                 let cardsHtml = matchesAtTime.map(m => {
+                    const gameNum = gameNumberMap[m.id] || 1;
                     const teamOptions = teamNameList.map(tm => `<option value="${tm}" ${tm === m.teamA ? 'selected' : ''}>${tm}</option>`).join('');
                     const teamBOptions = teamNameList.map(tm => `<option value="${tm}" ${tm === m.teamB ? 'selected' : ''}>${tm}</option>`).join('');
 
@@ -1751,21 +1922,43 @@
                             ? 'bg-white dark:bg-slate-900 border-orange-300 dark:border-orange-600 shadow-md ring-2 ring-orange-400/20'
                             : 'bg-slate-50/80 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 opacity-80';
 
+                    // 練習試合用トータル得点 ＆ ＋/ーワンタップボタン
                     const scoreInputsHtml = isTournament 
                         ? `<div class="flex items-center gap-1">
                                 <input type="number" value="${m.scoreA ?? 0}" readonly class="w-12 h-10 text-xl font-extrabold text-center text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg">
                                 <span class="font-bold text-slate-400 text-sm">-</span>
                                 <input type="number" value="${m.scoreB ?? 0}" readonly class="w-12 h-10 text-xl font-extrabold text-center text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg">
                            </div>`
-                        : `<div class="flex items-center gap-1">
-                                <input type="number" value="${m.scoreA ?? 0}" ${disabledAttr} oninput="updateMatchField('${m.id}', 'scoreA', parseInt(this.value,10)||0)" class="w-12 h-10 text-xl font-extrabold text-center text-slate-900 dark:text-white ${isInputAllowed ? 'bg-white dark:bg-slate-900' : 'bg-slate-100 dark:bg-slate-800'} border border-slate-300 dark:border-slate-700 rounded-lg focus:border-orange-500">
-                                <span class="font-bold text-slate-400 text-sm">-</span>
-                                <input type="number" value="${m.scoreB ?? 0}" ${disabledAttr} oninput="updateMatchField('${m.id}', 'scoreB', parseInt(this.value,10)||0)" class="w-12 h-10 text-xl font-extrabold text-center text-slate-900 dark:text-white ${isInputAllowed ? 'bg-white dark:bg-slate-900' : 'bg-slate-100 dark:bg-slate-800'} border border-slate-300 dark:border-slate-700 rounded-lg focus:border-orange-500">
+                        : `<div class="flex flex-col items-center gap-1.5">
+                                <div class="flex items-center gap-1">
+                                    <input type="number" value="${m.scoreA ?? 0}" ${disabledAttr} oninput="updateMatchField('${m.id}', 'scoreA', parseInt(this.value,10)||0)" class="w-12 h-10 text-xl font-extrabold text-center text-slate-900 dark:text-white ${isInputAllowed ? 'bg-white dark:bg-slate-900' : 'bg-slate-100 dark:bg-slate-800'} border border-slate-300 dark:border-slate-700 rounded-lg focus:border-orange-500">
+                                    <span class="font-bold text-slate-400 text-sm">-</span>
+                                    <input type="number" value="${m.scoreB ?? 0}" ${disabledAttr} oninput="updateMatchField('${m.id}', 'scoreB', parseInt(this.value,10)||0)" class="w-12 h-10 text-xl font-extrabold text-center text-slate-900 dark:text-white ${isInputAllowed ? 'bg-white dark:bg-slate-900' : 'bg-slate-100 dark:bg-slate-800'} border border-slate-300 dark:border-slate-700 rounded-lg focus:border-orange-500">
+                                </div>
+                                ${isInputAllowed ? `
+                                <div class="flex items-center gap-2 text-[10px] font-bold">
+                                    <div class="flex gap-0.5">
+                                        <button onclick="adjustTotalScore('${m.id}', 'A', -1)" class="w-6 h-6 rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-300 flex items-center justify-center font-bold">ー</button>
+                                        <button onclick="adjustTotalScore('${m.id}', 'A', 1)" class="w-6 h-6 rounded bg-orange-600 text-white hover:bg-orange-700 flex items-center justify-center font-bold">＋1</button>
+                                        <button onclick="adjustTotalScore('${m.id}', 'A', 2)" class="w-6 h-6 rounded bg-orange-600 text-white hover:bg-orange-700 flex items-center justify-center font-bold">＋2</button>
+                                        <button onclick="adjustTotalScore('${m.id}', 'A', 3)" class="w-6 h-6 rounded bg-orange-600 text-white hover:bg-orange-700 flex items-center justify-center font-bold">＋3</button>
+                                    </div>
+                                    <span class="text-slate-300 dark:text-slate-700">|</span>
+                                    <div class="flex gap-0.5">
+                                        <button onclick="adjustTotalScore('${m.id}', 'B', -1)" class="w-6 h-6 rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-300 flex items-center justify-center font-bold">ー</button>
+                                        <button onclick="adjustTotalScore('${m.id}', 'B', 1)" class="w-6 h-6 rounded bg-orange-600 text-white hover:bg-orange-700 flex items-center justify-center font-bold">＋1</button>
+                                        <button onclick="adjustTotalScore('${m.id}', 'B', 2)" class="w-6 h-6 rounded bg-orange-600 text-white hover:bg-orange-700 flex items-center justify-center font-bold">＋2</button>
+                                        <button onclick="adjustTotalScore('${m.id}', 'B', 3)" class="w-6 h-6 rounded bg-orange-600 text-white hover:bg-orange-700 flex items-center justify-center font-bold">＋3</button>
+                                    </div>
+                                </div>
+                                ` : ''}
                            </div>`;
 
+                    // 大会クォーター用＋／ー操作ボタン付きセクション
                     const quarterSectionHtml = isTournament 
-                        ? `<div class="bg-slate-100/70 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-[11px] space-y-1.5">
+                        ? `<div class="bg-slate-100/70 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-[11px] space-y-2">
                                 <div class="grid grid-cols-3 gap-1 sm:gap-2">
+                                    <!-- 前半 (5分) -->
                                     <div class="flex flex-col items-center">
                                         <span class="text-slate-600 dark:text-slate-400 font-bold text-[10px]">前半 (5分)</span>
                                         <div class="flex items-center gap-1 mt-0.5">
@@ -1773,7 +1966,25 @@
                                             <span>-</span>
                                             <input type="number" value="${sb1}" ${disabledAttr} oninput="updateQuarterScore('${m.id}', 'scoreB_1h', parseInt(this.value,10)||0)" class="w-8 h-7 text-xs font-bold text-center ${isInputAllowed ? 'bg-white dark:bg-slate-900' : 'bg-slate-100 dark:bg-slate-800'} border border-slate-300 dark:border-slate-700 rounded">
                                         </div>
+                                        ${isInputAllowed ? `
+                                        <div class="flex flex-col gap-1 w-full mt-1.5">
+                                            <div class="flex justify-center gap-0.5">
+                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreA_1h', -1)" class="px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-[9px] font-bold">ー</button>
+                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreA_1h', 1)" class="px-1 py-0.5 rounded bg-orange-600 text-white text-[9px] font-bold">＋1</button>
+                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreA_1h', 2)" class="px-1 py-0.5 rounded bg-orange-600 text-white text-[9px] font-bold">＋2</button>
+                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreA_1h', 3)" class="px-1 py-0.5 rounded bg-orange-600 text-white text-[9px] font-bold">＋3</button>
+                                            </div>
+                                            <div class="flex justify-center gap-0.5">
+                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreB_1h', -1)" class="px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-[9px] font-bold">ー</button>
+                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreB_1h', 1)" class="px-1 py-0.5 rounded bg-indigo-600 text-white text-[9px] font-bold">＋1</button>
+                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreB_1h', 2)" class="px-1 py-0.5 rounded bg-indigo-600 text-white text-[9px] font-bold">＋2</button>
+                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreB_1h', 3)" class="px-1 py-0.5 rounded bg-indigo-600 text-white text-[9px] font-bold">＋3</button>
+                                            </div>
+                                        </div>
+                                        ` : ''}
                                     </div>
+
+                                    <!-- 1on1 勝負 -->
                                     <div class="flex flex-col items-center bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-900 rounded p-1">
                                         <span class="text-amber-800 dark:text-amber-400 font-bold text-[9.5px]">🏀 1on1 勝負</span>
                                         <div class="flex items-center gap-1 mt-0.5">
@@ -1781,7 +1992,23 @@
                                             <span>-</span>
                                             <input type="number" value="${sb1on1}" ${disabledAttr} oninput="updateQuarterScore('${m.id}', 'scoreB_1on1', parseInt(this.value,10)||0)" class="w-8 h-6 text-xs font-bold text-center ${isInputAllowed ? 'bg-white dark:bg-slate-900' : 'bg-slate-100 dark:bg-slate-800'} border border-slate-300 dark:border-slate-700 rounded">
                                         </div>
+                                        ${isInputAllowed ? `
+                                        <div class="flex flex-col gap-1 w-full mt-1.5">
+                                            <div class="flex justify-center gap-0.5">
+                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreA_1on1', -1)" class="px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-[9px] font-bold">ー</button>
+                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreA_1on1', 1)" class="px-1 py-0.5 rounded bg-orange-600 text-white text-[9px] font-bold">＋1</button>
+                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreA_1on1', 2)" class="px-1 py-0.5 rounded bg-orange-600 text-white text-[9px] font-bold">＋2</button>
+                                            </div>
+                                            <div class="flex justify-center gap-0.5">
+                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreB_1on1', -1)" class="px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-[9px] font-bold">ー</button>
+                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreB_1on1', 1)" class="px-1 py-0.5 rounded bg-indigo-600 text-white text-[9px] font-bold">＋1</button>
+                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreB_1on1', 2)" class="px-1 py-0.5 rounded bg-indigo-600 text-white text-[9px] font-bold">＋2</button>
+                                            </div>
+                                        </div>
+                                        ` : ''}
                                     </div>
+
+                                    <!-- 後半 (5分) -->
                                     <div class="flex flex-col items-center">
                                         <span class="text-slate-600 dark:text-slate-400 font-bold text-[10px]">後半 (5分)</span>
                                         <div class="flex items-center gap-1 mt-0.5">
@@ -1789,6 +2016,22 @@
                                             <span>-</span>
                                             <input type="number" value="${sb2}" ${disabledAttr} oninput="updateQuarterScore('${m.id}', 'scoreB_2h', parseInt(this.value,10)||0)" class="w-8 h-7 text-xs font-bold text-center ${isInputAllowed ? 'bg-white dark:bg-slate-900' : 'bg-slate-100 dark:bg-slate-800'} border border-slate-300 dark:border-slate-700 rounded">
                                         </div>
+                                        ${isInputAllowed ? `
+                                        <div class="flex flex-col gap-1 w-full mt-1.5">
+                                            <div class="flex justify-center gap-0.5">
+                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreA_2h', -1)" class="px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-[9px] font-bold">ー</button>
+                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreA_2h', 1)" class="px-1 py-0.5 rounded bg-orange-600 text-white text-[9px] font-bold">＋1</button>
+                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreA_2h', 2)" class="px-1 py-0.5 rounded bg-orange-600 text-white text-[9px] font-bold">＋2</button>
+                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreA_2h', 3)" class="px-1 py-0.5 rounded bg-orange-600 text-white text-[9px] font-bold">＋3</button>
+                                            </div>
+                                            <div class="flex justify-center gap-0.5">
+                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreB_2h', -1)" class="px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-[9px] font-bold">ー</button>
+                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreB_2h', 1)" class="px-1 py-0.5 rounded bg-indigo-600 text-white text-[9px] font-bold">＋1</button>
+                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreB_2h', 2)" class="px-1 py-0.5 rounded bg-indigo-600 text-white text-[9px] font-bold">＋2</button>
+                                                <button onclick="adjustQuarterScore('${m.id}', 'scoreB_2h', 3)" class="px-1 py-0.5 rounded bg-indigo-600 text-white text-[9px] font-bold">＋3</button>
+                                            </div>
+                                        </div>
+                                        ` : ''}
                                     </div>
                                 </div>
                             </div>`
@@ -1809,7 +2052,8 @@
                     return `
                         <div class="border rounded-xl p-3.5 shadow-sm space-y-3 transition-all ${grayscaleClass}">
                             <div class="flex justify-between items-center text-xs border-b border-slate-200/80 dark:border-slate-800 pb-1.5">
-                                <div class="flex items-center gap-2">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="bg-orange-600 text-white text-[10px] font-black px-2 py-0.5 rounded-md font-mono shadow-xs">GAME ${gameNum}</span>
                                     <span class="font-bold text-orange-600 dark:text-orange-400 font-mono">${m.court || 'コート未定'}</span>
                                     ${statusBadge}
                                 </div>
@@ -1959,6 +2203,121 @@
             });
         }
 
+        function openPlayerDetailModal(playerName) {
+            const p = state.players.find(item => item.name === playerName);
+            if (!p) return;
+
+            document.getElementById('player-detail-name').innerText = p.name;
+            document.getElementById('player-detail-id').innerText = `管理ID: ${p.id}`;
+            document.getElementById('player-detail-number-badge').innerText = `#${p.number || '?'}`;
+
+            let totalPts = 0;
+            let matchHistory = [];
+
+            state.tournaments.forEach(tour => {
+                (tour.matches || []).forEach(m => {
+                    if (!m.isFinished) return;
+                    
+                    const teamAObj = tour.teams.find(t => t.name === m.teamA);
+                    const teamBObj = tour.teams.find(t => t.name === m.teamB);
+
+                    let playedInMatch = false;
+                    let matchScore = 0;
+
+                    if (teamAObj && teamAObj.members && teamAObj.members.includes(p.name)) {
+                        playedInMatch = true;
+                        const count = teamAObj.members.filter(mb => !GUEST_PLAYERS.includes(mb)).length || 1;
+                        matchScore = Math.round((m.scoreA || 0) / count);
+                    } else if (teamBObj && teamBObj.members && teamBObj.members.includes(p.name)) {
+                        playedInMatch = true;
+                        const count = teamBObj.members.filter(mb => !GUEST_PLAYERS.includes(mb)).length || 1;
+                        matchScore = Math.round((m.scoreB || 0) / count);
+                    }
+
+                    if (playedInMatch) {
+                        totalPts += matchScore;
+                        matchHistory.push({
+                            date: tour.date || '日付不明',
+                            tourName: tour.name || '大会',
+                            teamA: m.teamA,
+                            scoreA: m.scoreA,
+                            scoreB: m.scoreB,
+                            teamB: m.teamB,
+                            playerPts: matchScore
+                        });
+                    }
+                });
+            });
+
+            const matchCount = matchHistory.length;
+            const avgPts = matchCount > 0 ? (totalPts / matchCount).toFixed(1) : '0.0';
+
+            document.getElementById('player-detail-total-pts').innerText = `${totalPts} PTS`;
+            document.getElementById('player-detail-avg-pts').innerText = avgPts;
+            document.getElementById('player-detail-matches-count').innerText = `${matchCount} 試合`;
+
+            const now = new Date();
+            const lastDate = p.lastDate ? new Date(p.lastDate) : new Date(0);
+            const diffDays = (now - lastDate) / (1000 * 3600 * 24);
+            const isActive = diffDays <= 90;
+
+            document.getElementById('player-detail-status-badge').innerHTML = isActive 
+                ? `<span class="bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full">🟢 アクティブ</span>`
+                : `<span class="bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-bold px-2 py-0.5 rounded-full">⚪ 非アクティブ</span>`;
+
+            document.getElementById('player-detail-gender-pos').innerText = `${p.gender || '男'} / ${(p.positions || []).join(', ') || '未設定'}`;
+            
+            const ageStr = p.birth ? `${calculateAge(p.birth)}歳` : '-';
+            document.getElementById('player-detail-body-info').innerText = `${ageStr} / ${p.height ? p.height + 'cm' : '-'} / ${p.exp ? p.exp + '年' : '-'}`;
+
+            const historyContainer = document.getElementById('player-match-history-container');
+            const historyTag = document.getElementById('player-history-count-tag');
+            historyTag.innerText = `${matchCount} 件`;
+            historyContainer.innerHTML = '';
+
+            if (matchHistory.length === 0) {
+                historyContainer.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">過去の完了試合データがありません</p>`;
+            } else {
+                matchHistory.reverse().forEach(h => {
+                    const item = document.createElement('div');
+                    item.className = "bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl space-y-1";
+                    item.innerHTML = `
+                        <div class="flex justify-between items-center text-[10px] text-slate-400 font-mono">
+                            <span>📅 ${h.date} - ${h.tourName}</span>
+                            <span class="font-extrabold text-orange-600 dark:text-orange-400 text-xs">+${h.playerPts} PTS</span>
+                        </div>
+                        <div class="flex justify-between items-center font-bold text-slate-800 dark:text-white">
+                            <span>${h.teamA} vs ${h.teamB}</span>
+                            <span class="font-mono text-xs bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded">${h.scoreA} - ${h.scoreB}</span>
+                        </div>
+                    `;
+                    historyContainer.appendChild(item);
+                });
+            }
+
+            document.getElementById('modal-player-detail').classList.remove('hidden');
+        }
+
+        function closePlayerDetailModal() {
+            document.getElementById('modal-player-detail').classList.add('hidden');
+        }
+
+        function checkDuplicatePlayerName(inputVal) {
+            const warningEl = document.getElementById('player-duplicate-warning');
+            if (!warningEl) return;
+            const val = inputVal.trim();
+            if (!val) {
+                warningEl.classList.add('hidden');
+                return;
+            }
+            const isDuplicate = state.players.some(p => p.name === val && p.id !== state.editingPlayerId);
+            if (isDuplicate) {
+                warningEl.classList.remove('hidden');
+            } else {
+                warningEl.classList.add('hidden');
+            }
+        }
+
         function renderPlayersView() {
             const tbody = document.getElementById('players-table-tbody');
             if (!tbody) return;
@@ -1986,6 +2345,12 @@
                         });
                     }
                 });
+            });
+
+            const nameCountMap = {};
+            state.players.forEach(p => {
+                const name = (p.name || '').trim();
+                if (name) nameCountMap[name] = (nameCountMap[name] || 0) + 1;
             });
 
             let list = [...state.players].map(p => {
@@ -2021,25 +2386,26 @@
                     <span class="text-slate-500 dark:text-slate-400 font-bold">男女数:</span>
                     <span class="bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border border-blue-200 dark:border-blue-900 px-2 py-0.5 rounded-lg">男性: ${maleCount}人</span>
                     <span class="bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300 border border-red-200 dark:border-red-900 px-2 py-0.5 rounded-lg">女性: ${femaleCount}人</span>
-                    <span class="text-slate-300 dark:text-slate-700">|</span>
-                    <span class="text-slate-500 dark:text-slate-400 font-bold">ポジション分布:</span>
-                    <span class="bg-white dark:bg-slate-900 border dark:border-slate-700 px-2 py-0.5 rounded-lg text-slate-700 dark:text-slate-300">PG: ${posCount.PG}人</span>
-                    <span class="bg-white dark:bg-slate-900 border dark:border-slate-700 px-2 py-0.5 rounded-lg text-slate-700 dark:text-slate-300">SG: ${posCount.SG}人</span>
-                    <span class="bg-white dark:bg-slate-900 border dark:border-slate-700 px-2 py-0.5 rounded-lg text-slate-700 dark:text-slate-300">SF: ${posCount.SF}人</span>
-                    <span class="bg-white dark:bg-slate-900 border dark:border-slate-700 px-2 py-0.5 rounded-lg text-slate-700 dark:text-slate-300">PF: ${posCount.PF}人</span>
-                    <span class="bg-white dark:bg-slate-900 border dark:border-slate-700 px-2 py-0.5 rounded-lg text-slate-700 dark:text-slate-300">C: ${posCount.C}人</span>
                 `;
             }
 
             list.forEach(p => {
                 const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors";
+                tr.className = "hover:bg-orange-50/60 dark:hover:bg-slate-800/80 transition-colors cursor-pointer";
+
+                tr.onclick = (e) => {
+                    if (!e.target.closest('button')) {
+                        openPlayerDetailModal(p.name);
+                    }
+                };
 
                 const genderBadge = p.gender === '男' 
                     ? `<span class="bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 font-bold px-2 py-0.5 rounded-full text-[10px]">男</span>`
                     : `<span class="bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 font-bold px-2 py-0.5 rounded-full text-[10px]">女</span>`;
 
-                const posBadges = (p.positions || []).map(pos => `<span class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold px-1.5 py-0.5 rounded text-[10px] mr-0.5">${pos}</span>`).join('');
+                const posBadges = (p.positions || []).length > 0 
+                    ? p.positions.map(pos => `<span class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold px-1.5 py-0.5 rounded text-[10px] mr-0.5">${pos}</span>`).join('') 
+                    : `<span class="text-slate-400 font-medium">未設定</span>`;
 
                 const now = new Date();
                 const lastDate = p.lastDate ? new Date(p.lastDate) : new Date(0);
@@ -2052,18 +2418,26 @@
 
                 const ageStr = p.birth ? `${calculateAge(p.birth)}歳` : '-';
 
+                const isDuplicate = (nameCountMap[p.name] || 0) > 1;
+                const duplicateLabel = isDuplicate 
+                    ? `<span class="bg-rose-100 text-rose-700 dark:bg-rose-950/90 dark:text-rose-300 font-extrabold text-[9.5px] px-1.5 py-0.5 rounded ml-1 border border-rose-300 dark:border-rose-800">⚠️ 同姓同名</span>` 
+                    : '';
+
                 tr.innerHTML = `
                     <td class="p-2.5 font-mono text-left font-bold text-slate-700 dark:text-slate-300">${p.id}</td>
                     <td class="p-2.5 text-center font-mono font-bold text-orange-600 dark:text-orange-400">${p.number || '-'}</td>
-                    <td class="p-2.5 font-bold text-slate-900 dark:text-white">${p.name}</td>
+                    <td class="p-2.5 font-bold text-slate-900 dark:text-white flex items-center gap-1">
+                        <span>${p.name}</span>
+                        ${duplicateLabel}
+                        <i class="fa-solid fa-chevron-right text-[10px] text-slate-300 ml-auto"></i>
+                    </td>
                     <td class="p-2.5 text-center">${genderBadge}</td>
-                    <td class="p-2.5 text-center">${posBadges || '-'}</td>
+                    <td class="p-2.5 text-center">${posBadges}</td>
                     <td class="p-2.5 text-center font-mono font-extrabold text-orange-600 dark:text-orange-400 bg-orange-50/50 dark:bg-orange-950/40 rounded-lg">${p.pts} PTS</td>
                     <td class="p-2.5 text-center">${statusBadge}</td>
                     <td class="p-2.5 text-center font-mono text-amber-800 dark:text-amber-400 admin-only-col ${state.isAdminUnlocked ? '' : 'hidden'}">${ageStr} / ${p.height ? p.height + 'cm' : '-'} / ${p.exp ? p.exp + '年' : '-'}</td>
-                    <td class="p-2.5 text-right space-x-1">
-                        <button onclick="requestPasscodeProtection(() => openAddPlayerModal('${p.id}'))" class="text-slate-500 hover:text-slate-800 dark:hover:text-white font-bold">編集</button>
-                        <button onclick="requestPasscodeProtection(() => deletePlayer('${p.id}'))" class="text-red-500 hover:text-red-700 font-bold">削除</button>
+                    <td class="p-2.5 text-right">
+                        <button onclick="requestPasscodeProtection(() => openAddPlayerModal('${p.id}'))" class="text-indigo-600 dark:text-indigo-400 hover:underline font-bold text-xs">編集</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -2291,7 +2665,6 @@
             saveStateToStorage();
             closeSettingsModal();
             renderNewsView();
-            fetchYouTubeRealtimeStats();
             showToast('設定を保存しました');
         }
 
@@ -2643,7 +3016,9 @@
             const birthInput = document.getElementById('player-form-birth');
             const heightInput = document.getElementById('player-form-height');
             const expInput = document.getElementById('player-form-exp');
+            const warningEl = document.getElementById('player-duplicate-warning');
 
+            if (warningEl) warningEl.classList.add('hidden');
             document.querySelectorAll('input[name="pos"]').forEach(cb => cb.checked = false);
 
             if (playerId) {
@@ -2692,12 +3067,6 @@
                 return;
             }
 
-            const duplicate = state.players.find(p => p.name === name && p.id !== id);
-            if (duplicate) {
-                showToast('同名の選手がすでに存在します');
-                return;
-            }
-
             const posList = [];
             document.querySelectorAll('input[name="pos"]:checked').forEach(cb => {
                 posList.push(cb.value);
@@ -2733,13 +3102,6 @@
             closePlayerModal();
             renderPlayersView();
             showToast('選手情報を保存しました');
-        }
-
-        function deletePlayer(playerId) {
-            state.players = state.players.filter(p => p.id !== playerId);
-            saveStateToStorage();
-            renderPlayersView();
-            showToast('選手を削除しました');
         }
 
         function exportRankingPNG() {
